@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct OnboardingFeature {
+public struct OnboardingFeature {
     let icon: String
     let title: String
     let description: String

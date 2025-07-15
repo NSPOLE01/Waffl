@@ -1,5 +1,6 @@
 // OnboardingView.swift
 import SwiftUI
+import Foundation
 
 struct OnboardingView: View {
     @State private var currentPage = 0
