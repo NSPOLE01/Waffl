@@ -29,12 +29,36 @@
 		91F0E9EB2E25E5C80056D3AA /* WafflUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WafflUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		91F0E9D62E25E5C60056D3AA /* Waffl */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Waffl;
-			sourceTree = "<group>";
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		91F0EA0F2E25F0E60056D3AA /* Exceptions for "Waffl" folder in "Waffl" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				Views/ContentView.swift,
+				Views/CustomStyles.swift,
+				Views/OnboardingComponents.swift,
+				Views/OnboardingView.swift,
+				Views/SignInView.swift,
+				WafflApp.swift,
+			);
+			target = 91F0E9D32E25E5C60056D3AA /* Waffl */;
 		};
+		91F0EA102E25F0E60056D3AA /* Exceptions for "Waffl" folder in "WafflUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				Views/ContentView.swift,
+				Views/CustomStyles.swift,
+				Views/OnboardingComponents.swift,
+				Views/OnboardingView.swift,
+				Views/SignInView.swift,
+				WafflApp.swift,
+			);
+			target = 91F0E9EA2E25E5C80056D3AA /* WafflUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
 		91F0E9E42E25E5C80056D3AA /* WafflTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = WafflTests;
@@ -43,6 +67,15 @@
 		91F0E9EE2E25E5C80056D3AA /* WafflUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = WafflUITests;
+			sourceTree = "<group>";
+		};
+		91F0EA0B2E25F0E60056D3AA /* Waffl */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				91F0EA0F2E25F0E60056D3AA /* Exceptions for "Waffl" folder in "Waffl" target */,
+				91F0EA102E25F0E60056D3AA /* Exceptions for "Waffl" folder in "WafflUITests" target */,
+			);
+			path = Waffl;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,7 +108,7 @@
 		91F0E9CB2E25E5C60056D3AA = {
 			isa = PBXGroup;
 			children = (
-				91F0E9D62E25E5C60056D3AA /* Waffl */,
+				91F0EA0B2E25F0E60056D3AA /* Waffl */,
 				91F0E9E42E25E5C80056D3AA /* WafflTests */,
 				91F0E9EE2E25E5C80056D3AA /* WafflUITests */,
 				91F0E9D52E25E5C60056D3AA /* Products */,
@@ -106,9 +139,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				91F0E9D62E25E5C60056D3AA /* Waffl */,
 			);
 			name = Waffl;
 			packageProductDependencies = (
@@ -155,6 +185,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				91F0E9EE2E25E5C80056D3AA /* WafflUITests */,
+				91F0EA0B2E25F0E60056D3AA /* Waffl */,
 			);
 			name = WafflUITests;
 			packageProductDependencies = (
