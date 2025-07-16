@@ -74,10 +74,12 @@ struct PageIndicatorView: View {
 
 struct OnboardingButtonsView: View {
     @State private var showingAuth = false
+    @State private var authState: AuthenticationState = .signIn
     
     var body: some View {
         VStack(spacing: 16) {
             Button(action: {
+                authState = .signUp
                 showingAuth = true
             }) {
                 Text("Create Account")
@@ -90,6 +92,7 @@ struct OnboardingButtonsView: View {
             }
             
             Button(action: {
+                authState = .signIn
                 showingAuth = true
             }) {
                 Text("Sign In")
@@ -110,7 +113,7 @@ struct OnboardingButtonsView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 40)
         .fullScreenCover(isPresented: $showingAuth) {
-            AuthCoordinatorView()
+            AuthCoordinatorView(initialState: authState)
         }
     }
 }

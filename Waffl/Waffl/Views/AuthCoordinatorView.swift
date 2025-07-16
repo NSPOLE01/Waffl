@@ -2,9 +2,8 @@
 //  AuthCoordinatorView.swift
 //  Waffl
 //
-//  Created by Nikhil Polepalli on 7/15/25.
+//  Created by Nikhil Polepalli on 7/14/25.
 //
-
 
 import SwiftUI
 
@@ -14,8 +13,12 @@ enum AuthenticationState {
 }
 
 struct AuthCoordinatorView: View {
-    @State private var authState: AuthenticationState = .signIn
+    @State private var authState: AuthenticationState
     @Environment(\.presentationMode) var presentationMode
+    
+    init(initialState: AuthenticationState = .signIn) {
+        self._authState = State(initialValue: initialState)
+    }
     
     var body: some View {
         ZStack {
