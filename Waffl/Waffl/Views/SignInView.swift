@@ -41,6 +41,12 @@ struct SignInView: View {
                 // Sign In Button
                 SignInButtonView(email: email, password: password)
                 
+                // Or divider
+                OrDividerView()
+                
+                // Google Sign In Button
+                GoogleSignInButtonView()
+                
                 Spacer()
                 
                 // Sign Up Link
@@ -158,6 +164,54 @@ struct SignUpLinkView: View {
             }
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.orange)
+        }
+    }
+}
+
+struct OrDividerView: View {
+    var body: some View {
+        HStack {
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(height: 1)
+            
+            Text("or")
+                .font(.system(size: 14))
+                .foregroundColor(Color.secondary)
+                .padding(.horizontal, 16)
+            
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(height: 1)
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+struct GoogleSignInButtonView: View {
+    var body: some View {
+        Button(action: {
+            // Google sign in action
+            print("Google Sign In tapped")
+        }) {
+            HStack(spacing: 12) {
+                // Google Logo
+                Image(systemName: "globe")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                Text("Sign in with Google")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(Color(UIColor.systemBackground))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            )
+            .cornerRadius(12)
         }
     }
 }
