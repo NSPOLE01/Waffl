@@ -5,7 +5,6 @@
 //  Created by Nikhil Polepalli on 7/14/25.
 //
 
-
 import SwiftUI
 
 struct AppLogoView: View {
@@ -74,10 +73,12 @@ struct PageIndicatorView: View {
 }
 
 struct OnboardingButtonsView: View {
+    @State private var showingAuth = false
+    
     var body: some View {
         VStack(spacing: 16) {
             Button(action: {
-                // Sign Up Action
+                showingAuth = true
             }) {
                 Text("Create Account")
                     .font(.system(size: 18, weight: .semibold))
@@ -89,7 +90,7 @@ struct OnboardingButtonsView: View {
             }
             
             Button(action: {
-                // Sign In Action
+                showingAuth = true
             }) {
                 Text("Sign In")
                     .font(.system(size: 18, weight: .medium))
@@ -108,6 +109,9 @@ struct OnboardingButtonsView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 40)
+        .fullScreenCover(isPresented: $showingAuth) {
+            AuthCoordinatorView()
+        }
     }
 }
 

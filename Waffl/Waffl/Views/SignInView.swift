@@ -15,6 +15,19 @@ struct SignInView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 30) {
+                // Back Button
+                HStack {
+                    Button(action: {
+                        NotificationCenter.default.post(name: .dismissAuth, object: nil)
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.orange)
+                    }
+                    Spacer()
+                }
+                .padding(.top, 20)
+                
                 // Header
                 SignInHeaderView()
                 
@@ -116,7 +129,9 @@ struct SignInButtonView: View {
     
     var body: some View {
         Button(action: {
-            // Sign in action
+            // Sign in action - here you would handle authentication
+            // For now, we'll just dismiss the auth flow
+            NotificationCenter.default.post(name: .dismissAuth, object: nil)
         }) {
             Text("Sign In")
                 .font(.system(size: 18, weight: .semibold))
@@ -139,7 +154,7 @@ struct SignUpLinkView: View {
                 .foregroundColor(Color.secondary)
             
             Button("Sign Up") {
-                // Navigate to sign up
+                NotificationCenter.default.post(name: .navigateToSignUp, object: nil)
             }
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.orange)

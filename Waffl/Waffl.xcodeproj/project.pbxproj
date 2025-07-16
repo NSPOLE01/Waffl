@@ -35,11 +35,13 @@
 			membershipExceptions = (
 				Assets.xcassets,
 				Models/OnboardingModels.swift,
+				Views/AuthCoordinatorView.swift,
 				Views/ContentView.swift,
 				Views/CustomStyles.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,
+				Views/SignUpView.swift,
 				WafflApp.swift,
 			);
 			target = 91F0E9D32E25E5C60056D3AA /* Waffl */;
@@ -49,11 +51,13 @@
 			membershipExceptions = (
 				Assets.xcassets,
 				Models/OnboardingModels.swift,
+				Views/AuthCoordinatorView.swift,
 				Views/ContentView.swift,
 				Views/CustomStyles.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,
+				Views/SignUpView.swift,
 				WafflApp.swift,
 			);
 			target = 91F0E9EA2E25E5C80056D3AA /* WafflUITests */;
