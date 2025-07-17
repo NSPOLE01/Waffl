@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		91F0EA252E2872CC0056D3AA /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA242E2872CC0056D3AA /* FirebaseAuth */; };
+		91F0EA272E2872CC0056D3AA /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA262E2872CC0056D3AA /* FirebaseCore */; };
+		91F0EA292E2872CC0056D3AA /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA282E2872CC0056D3AA /* FirebaseDatabase */; };
+		91F0EA2B2E2872CC0056D3AA /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA2A2E2872CC0056D3AA /* FirebaseFirestore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		91F0E9E22E25E5C80056D3AA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -34,6 +41,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets.xcassets,
+				"GoogleService-Info.plist",
 				Models/OnboardingModels.swift,
 				Views/AuthCoordinatorView.swift,
 				Views/ContentView.swift,
@@ -50,6 +58,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets.xcassets,
+				"GoogleService-Info.plist",
 				Models/OnboardingModels.swift,
 				Views/AuthCoordinatorView.swift,
 				Views/ContentView.swift,
@@ -91,6 +100,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91F0EA292E2872CC0056D3AA /* FirebaseDatabase in Frameworks */,
+				91F0EA2B2E2872CC0056D3AA /* FirebaseFirestore in Frameworks */,
+				91F0EA272E2872CC0056D3AA /* FirebaseCore in Frameworks */,
+				91F0EA252E2872CC0056D3AA /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +161,10 @@
 			);
 			name = Waffl;
 			packageProductDependencies = (
+				91F0EA242E2872CC0056D3AA /* FirebaseAuth */,
+				91F0EA262E2872CC0056D3AA /* FirebaseCore */,
+				91F0EA282E2872CC0056D3AA /* FirebaseDatabase */,
+				91F0EA2A2E2872CC0056D3AA /* FirebaseFirestore */,
 			);
 			productName = Waffl;
 			productReference = 91F0E9D42E25E5C60056D3AA /* Waffl.app */;
@@ -232,6 +249,9 @@
 			);
 			mainGroup = 91F0E9CB2E25E5C60056D3AA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 91F0E9D52E25E5C60056D3AA /* Products */;
 			projectDirPath = "";
@@ -595,6 +615,40 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		91F0EA242E2872CC0056D3AA /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		91F0EA262E2872CC0056D3AA /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		91F0EA282E2872CC0056D3AA /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		91F0EA2A2E2872CC0056D3AA /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 91F0E9CC2E25E5C60056D3AA /* Project object */;
 }

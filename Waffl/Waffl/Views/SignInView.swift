@@ -6,11 +6,17 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseAuth
+import GoogleSignIn
 
 struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isShowingPassword = false
+    @State private var isLoading = false
+    @State private var errorMessage = ""
+    @State private var showingError = false
     
     var body: some View {
         NavigationView {
@@ -54,6 +60,83 @@ struct SignInView: View {
             }
             .padding(.horizontal, 24)
             .navigationBarHidden(true)
+        }
+    }
+    
+    // MARK: - Authentication Methods
+    
+    private func signInWithEmail() {
+        isLoading = true
+        errorMessage = ""
+        showingError = false
+        
+        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                
+                if let error = error {
+                    errorMessage = error.localizedDescription
+                    showingError = true
+                } else {
+                    // Success - dismiss auth flow
+                    NotificationCenter.default.post(name: .dismissAuth, object: nil)
+                }
+            }
+        }
+    }
+    
+    private func signInWithGoogle() {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            print("No Firebase client ID found")
+            return
+        }
+        
+        // Configure Google Sign In
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+        
+        // Get the presenting view controller
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController else {
+            print("No root view controller found")
+            return
+        }
+        
+        isLoading = true
+        errorMessage = ""
+        showingError = false
+        
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                
+                if let error = error {
+                    self?.errorMessage = error.localizedDescription
+                    self?.showingError = true
+                    return
+                }
+                
+                guard let user = result?.user,
+                      let idToken = user.idToken?.tokenString else {
+                    self?.errorMessage = "Failed to get Google ID token"
+                    self?.showingError = true
+                    return
+                }
+                
+                let credential = GoogleAuthProvider.credential(withIDToken: idToken,
+                                                             accessToken: user.accessToken.tokenString)
+                
+                Auth.auth().signIn(with: credential) { authResult, error in
+                    if let error = error {
+                        self?.errorMessage = error.localizedDescription
+                        self?.showingError = true
+                    } else {
+                        // Success - dismiss auth flow
+                        NotificationCenter.default.post(name: .dismissAuth, object: nil)
+                    }
+                }
+            }
         }
     }
 }
@@ -132,23 +215,29 @@ struct SignInFormView: View {
 struct SignInButtonView: View {
     let email: String
     let password: String
+    let isLoading: Bool
+    let onSignIn: () -> Void
     
     var body: some View {
-        Button(action: {
-            // Sign in action - here you would handle authentication
-            // For now, we'll just dismiss the auth flow
-            NotificationCenter.default.post(name: .dismissAuth, object: nil)
-        }) {
-            Text("Sign In")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(Color.orange)
-                .cornerRadius(12)
+        Button(action: onSignIn) {
+            HStack {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    Text("Sign In")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(Color.orange)
+            .cornerRadius(12)
         }
-        .disabled(email.isEmpty || password.isEmpty)
-        .opacity(email.isEmpty || password.isEmpty ? 0.6 : 1.0)
+        .disabled(email.isEmpty || password.isEmpty || isLoading)
+        .opacity(email.isEmpty || password.isEmpty || isLoading ? 0.6 : 1.0)
     }
 }
 
@@ -189,20 +278,32 @@ struct OrDividerView: View {
 }
 
 struct GoogleSignInButtonView: View {
+    let isLoading: Bool
+    let onGoogleSignIn: () -> Void
+    
     var body: some View {
-        Button(action: {
-            // Google sign in action
-            print("Google Sign In tapped")
-        }) {
+        Button(action: onGoogleSignIn) {
             HStack(spacing: 12) {
-                // Google Logo
-                Image(systemName: "globe")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                Text("Sign in with Google")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.primary)
+                } else {
+                    // Google "G" logo recreation using SF Symbols
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 20, height: 20)
+                        
+                        Text("G")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Text("Sign in with Google")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 54)
@@ -213,5 +314,7 @@ struct GoogleSignInButtonView: View {
             )
             .cornerRadius(12)
         }
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.6 : 1.0)
     }
 }
