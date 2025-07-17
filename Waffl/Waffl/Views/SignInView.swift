@@ -44,14 +44,22 @@ struct SignInView: View {
                     isShowingPassword: $isShowingPassword
                 )
                 
-                // Sign In Button
-                SignInButtonView(email: email, password: password)
+                // Sign In Button - Fixed: Added onSignIn parameter
+                SignInButtonView(
+                    email: email,
+                    password: password,
+                    isLoading: isLoading,
+                    onSignIn: signInWithEmail
+                )
                 
                 // Or divider
                 OrDividerView()
                 
-                // Google Sign In Button
-                GoogleSignInButtonView()
+                // Google Sign In Button - Fixed: Added parameters
+                GoogleSignInButtonView(
+                    isLoading: isLoading,
+                    onGoogleSignIn: signInWithGoogle
+                )
                 
                 Spacer()
                 
@@ -60,6 +68,11 @@ struct SignInView: View {
             }
             .padding(.horizontal, 24)
             .navigationBarHidden(true)
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
         }
     }
     
@@ -107,20 +120,20 @@ struct SignInView: View {
         errorMessage = ""
         showingError = false
         
-        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [self] result, error in
             DispatchQueue.main.async {
-                self?.isLoading = false
+                self.isLoading = false
                 
                 if let error = error {
-                    self?.errorMessage = error.localizedDescription
-                    self?.showingError = true
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
                     return
                 }
                 
                 guard let user = result?.user,
                       let idToken = user.idToken?.tokenString else {
-                    self?.errorMessage = "Failed to get Google ID token"
-                    self?.showingError = true
+                    self.errorMessage = "Failed to get Google ID token"
+                    self.showingError = true
                     return
                 }
                 
@@ -129,8 +142,8 @@ struct SignInView: View {
                 
                 Auth.auth().signIn(with: credential) { authResult, error in
                     if let error = error {
-                        self?.errorMessage = error.localizedDescription
-                        self?.showingError = true
+                        self.errorMessage = error.localizedDescription
+                        self.showingError = true
                     } else {
                         // Success - dismiss auth flow
                         NotificationCenter.default.post(name: .dismissAuth, object: nil)
