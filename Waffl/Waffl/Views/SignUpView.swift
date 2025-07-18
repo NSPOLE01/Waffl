@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseAuth
+import FirebaseFirestore
 
 struct SignUpView: View {
     @State private var firstName = ""
@@ -15,6 +18,9 @@ struct SignUpView: View {
     @State private var confirmPassword = ""
     @State private var isShowingPassword = false
     @State private var isShowingConfirmPassword = false
+    @State private var isLoading = false
+    @State private var errorMessage = ""
+    @State private var showingError = false
     
     var body: some View {
         NavigationView {
@@ -53,7 +59,9 @@ struct SignUpView: View {
                         lastName: lastName,
                         email: email,
                         password: password,
-                        confirmPassword: confirmPassword
+                        confirmPassword: confirmPassword,
+                        isLoading: isLoading,
+                        onSignUp: createAccount
                     )
                     
                     Spacer(minLength: 20)
@@ -64,6 +72,75 @@ struct SignUpView: View {
                 .padding(.horizontal, 24)
             }
             .navigationBarHidden(true)
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+    
+    // MARK: - Account Creation
+    private func createAccount() {
+        isLoading = true
+        errorMessage = ""
+        showingError = false
+        
+        // Create user with email and password
+        Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                }
+                return
+            }
+            
+            // If user creation successful, save additional user data to Firestore
+            guard let user = authResult?.user else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to create user account"
+                    self.showingError = true
+                }
+                return
+            }
+            
+            // Save user profile data to Firestore
+            self.saveUserProfile(uid: user.uid)
+        }
+    }
+    
+    private func saveUserProfile(uid: String) {
+        let db = Firestore.firestore()
+        
+        let userData: [String: Any] = [
+            "uid": uid,
+            "firstName": firstName,
+            "lastName": lastName,
+            "email": email,
+            "displayName": "\(firstName) \(lastName)",
+            "createdAt": Timestamp(date: Date()),
+            "updatedAt": Timestamp(date: Date()),
+            "videosUploaded": 0,
+            "friendsCount": 0,
+            "weeksParticipated": 0,
+            "profileImageURL": "" // Empty for now, can be updated later
+        ]
+        
+        db.collection("users").document(uid).setData(userData) { error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = "Account created but failed to save profile: \(error.localizedDescription)"
+                    self.showingError = true
+                } else {
+                    // Success - dismiss auth flow
+                    NotificationCenter.default.post(name: .dismissAuth, object: nil)
+                }
+            }
         }
     }
 }
@@ -178,6 +255,22 @@ struct SignUpFormView: View {
             
             // Password Requirements
             PasswordRequirementsView(password: password)
+            
+            // Password Match Validation
+            if !confirmPassword.isEmpty {
+                HStack {
+                    Image(systemName: password == confirmPassword ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .foregroundColor(password == confirmPassword ? .green : .red)
+                        .font(.system(size: 12))
+                    
+                    Text("Passwords match")
+                        .font(.system(size: 12))
+                        .foregroundColor(password == confirmPassword ? .green : .red)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+            }
         }
     }
 }
@@ -241,6 +334,8 @@ struct SignUpButtonView: View {
     let email: String
     let password: String
     let confirmPassword: String
+    let isLoading: Bool
+    let onSignUp: () -> Void
     
     private var isFormValid: Bool {
         !firstName.isEmpty &&
@@ -249,25 +344,32 @@ struct SignUpButtonView: View {
         !password.isEmpty &&
         !confirmPassword.isEmpty &&
         password == confirmPassword &&
-        password.count >= 8
+        password.count >= 8 &&
+        password.range(of: "[A-Z]", options: .regularExpression) != nil &&
+        password.range(of: "[a-z]", options: .regularExpression) != nil &&
+        password.range(of: "[0-9]", options: .regularExpression) != nil
     }
     
     var body: some View {
-        Button(action: {
-            // Sign up action - here you would handle user registration
-            // For now, we'll just dismiss the auth flow
-            NotificationCenter.default.post(name: .dismissAuth, object: nil)
-        }) {
-            Text("Create Account")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(Color.orange)
-                .cornerRadius(12)
+        Button(action: onSignUp) {
+            HStack {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    Text("Create Account")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(Color.orange)
+            .cornerRadius(12)
         }
-        .disabled(!isFormValid)
-        .opacity(isFormValid ? 1.0 : 0.6)
+        .disabled(!isFormValid || isLoading)
+        .opacity(isFormValid && !isLoading ? 1.0 : 0.6)
     }
 }
 

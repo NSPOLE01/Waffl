@@ -22,17 +22,33 @@ struct AccountView: View {
                             .fill(Color.orange.opacity(0.1))
                             .frame(width: 100, height: 100)
                         
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.orange)
+                        if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
+                           !profileImageURL.isEmpty {
+                            // TODO: Load profile image from URL
+                            AsyncImage(url: URL(string: profileImageURL)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(Circle())
+                            } placeholder: {
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.orange)
+                            }
+                        } else {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 50))
+                                .foregroundColor(.orange)
+                        }
                     }
                     
                     VStack(spacing: 4) {
-                        Text("John Doe") // TODO: Get from user data
+                        Text(authManager.currentUserProfile?.displayName ?? "Loading...")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.primary)
                         
-                        Text("john.doe@example.com") // TODO: Get from Firebase Auth
+                        Text(authManager.currentUserProfile?.email ?? "")
                             .font(.system(size: 16))
                             .foregroundColor(.secondary)
                     }
@@ -42,7 +58,7 @@ struct AccountView: View {
                 // Stats
                 HStack(spacing: 40) {
                     VStack(spacing: 8) {
-                        Text("12")
+                        Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.primary)
                         Text("Friends")
@@ -51,7 +67,7 @@ struct AccountView: View {
                     }
                     
                     VStack(spacing: 8) {
-                        Text("8")
+                        Text("\(authManager.currentUserProfile?.videosUploaded ?? 0)")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.primary)
                         Text("Videos")
@@ -60,7 +76,7 @@ struct AccountView: View {
                     }
                     
                     VStack(spacing: 8) {
-                        Text("24")
+                        Text("\(authManager.currentUserProfile?.weeksParticipated ?? 0)")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.primary)
                         Text("Weeks")
