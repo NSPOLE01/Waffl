@@ -43,11 +43,13 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets.xcassets,
+				Controller/AuthManager.swift,
 				"GoogleService-Info.plist",
 				Models/OnboardingModels.swift,
 				Views/AuthCoordinatorView.swift,
 				Views/ContentView.swift,
 				Views/CustomStyles.swift,
+				Views/HomeScreenView.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,
@@ -66,6 +68,7 @@
 				Views/AuthCoordinatorView.swift,
 				Views/ContentView.swift,
 				Views/CustomStyles.swift,
+				Views/HomeScreenView.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,

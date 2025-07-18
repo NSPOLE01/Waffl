@@ -1,9 +1,26 @@
-// ContentView.swift
+//
+//  ContentView.swift
+//  Waffl
+//
+//  Created by Nikhil Polepalli on 7/17/25.
+//
+
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var authManager = AuthManager()
+    
     var body: some View {
-        OnboardingView()
+        Group {
+            if authManager.isAuthenticated {
+                HomeScreenView()
+                    .environmentObject(authManager)
+            } else {
+                OnboardingView()
+                    .environmentObject(authManager)
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
     }
 }
 
