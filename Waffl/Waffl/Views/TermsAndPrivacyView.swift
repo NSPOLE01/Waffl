@@ -5,6 +5,8 @@
 //  Created by Nikhil Polepalli on 7/18/25.
 //
 
+import SwiftUI
+
 struct TermsAndPrivacyView: View {
     var body: some View {
         VStack(spacing: 8) {
