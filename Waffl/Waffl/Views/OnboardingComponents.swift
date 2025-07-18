@@ -107,41 +107,12 @@ struct OnboardingButtonsView: View {
                     )
             }
             
-            // Terms and Privacy
             TermsAndPrivacyView()
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 40)
         .fullScreenCover(isPresented: $showingAuth) {
             AuthCoordinatorView(initialState: authState)
-        }
-    }
-}
-
-struct TermsAndPrivacyView: View {
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("By continuing, you agree to our")
-                .font(.caption)
-                .foregroundColor(Color.primary)
-            
-            HStack(spacing: 4) {
-                Button("Terms of Service") {
-                    // Terms action
-                }
-                .font(.caption)
-                .foregroundColor(.orange)
-                
-                Text("and")
-                    .font(.caption)
-                    .foregroundColor(Color.primary)
-                
-                Button("Privacy Policy") {
-                    // Privacy action
-                }
-                .font(.caption)
-                .foregroundColor(.orange)
-            }
         }
     }
 }

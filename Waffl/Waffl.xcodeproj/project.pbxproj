@@ -60,6 +60,7 @@
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,
 				Views/SignUpView.swift,
+				Views/TermsAndPrivacyView.swift,
 				Views/VideoComponentsView.swift,
 				WafflApp.swift,
 			);
@@ -86,6 +87,7 @@
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,
 				Views/SignUpView.swift,
+				Views/TermsAndPrivacyView.swift,
 				Views/VideoComponentsView.swift,
 				WafflApp.swift,
 			);
