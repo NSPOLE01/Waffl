@@ -21,7 +21,6 @@ struct SignInView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 30) {
-                // Back Button
                 HStack {
                     Button(action: {
                         NotificationCenter.default.post(name: .dismissAuth, object: nil)
