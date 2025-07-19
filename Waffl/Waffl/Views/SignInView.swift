@@ -8,15 +8,16 @@
 import SwiftUI
 import Firebase
 import FirebaseAuth
+import FirebaseFirestore
 import GoogleSignIn
+
+
 
 struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isShowingPassword = false
     @State private var isLoading = false
-    @State private var errorMessage = ""
-    @State private var showingError = false
     @State private var showingCreateAccountAlert = false
     
     var body: some View {
@@ -44,7 +45,7 @@ struct SignInView: View {
                     isShowingPassword: $isShowingPassword
                 )
                 
-                // Sign In Button - Fixed: Added onSignIn parameter
+                // Sign In Button
                 SignInButtonView(
                     email: email,
                     password: password,
@@ -55,7 +56,7 @@ struct SignInView: View {
                 // Or divider
                 OrDividerView()
                 
-                // Google Sign In Button - Fixed: Added parameters
+                // Google Sign In Button
                 GoogleSignInButtonView(
                     isLoading: isLoading,
                     onGoogleSignIn: signInWithGoogle
@@ -68,10 +69,13 @@ struct SignInView: View {
             }
             .padding(.horizontal, 24)
             .navigationBarHidden(true)
-            .alert("Error", isPresented: $showingError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
+            .sheet(isPresented: $showingCreateAccountAlert) {
+                CreateAccountPromptView {
+                    showingCreateAccountAlert = false
+                    NotificationCenter.default.post(name: .navigateToSignUp, object: nil)
+                } onCancel: {
+                    showingCreateAccountAlert = false
+                }
             }
         }
     }
@@ -80,16 +84,14 @@ struct SignInView: View {
     
     private func signInWithEmail() {
         isLoading = true
-        errorMessage = ""
-        showingError = false
         
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
             DispatchQueue.main.async {
                 isLoading = false
                 
                 if let error = error {
-                    errorMessage = error.localizedDescription
-                    showingError = true
+                    print("❌ Email sign-in error: \(error.localizedDescription)")
+                    // Handle error silently or show a simple print
                 } else {
                     // Success - dismiss auth flow
                     NotificationCenter.default.post(name: .dismissAuth, object: nil)
@@ -117,69 +119,79 @@ struct SignInView: View {
         }
         
         isLoading = true
-        errorMessage = ""
-        showingError = false
         
         GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [self] result, error in
             DispatchQueue.main.async {
-                self.isLoading = false
-                
                 if let error = error {
-                    self.errorMessage = error.localizedDescription
-                    self.showingError = true
+                    print("❌ Google sign-in error: \(error.localizedDescription)")
+                    self.isLoading = false
                     return
                 }
                 
                 guard let user = result?.user,
-                      let idToken = user.idToken?.tokenString else {
-                    self.errorMessage = "Failed to get Google ID token"
-                    self.showingError = true
+                      let email = user.profile?.email else {
+                    print("❌ Failed to get Google user info")
+                    self.isLoading = false
                     return
                 }
                 
-                let credential = GoogleAuthProvider.credential(withIDToken: idToken,
-                                                             accessToken: user.accessToken.tokenString)
+                print("📧 Google user email: \(email)")
                 
-                Auth.auth().signIn(with: credential) { authResult, error in
-                    if let error = error {
-                        self.errorMessage = error.localizedDescription
-                        self.showingError = true
-                        return
-                    }
-                    
-                    // Check if user exists in Firestore
-                    guard let firebaseUser = authResult?.user else {
-                        self.errorMessage = "Authentication failed"
-                        self.showingError = true
-                        return
-                    }
-                    
-                    self.checkUserExistsInFirestore(uid: firebaseUser.uid)
-                }
+                // Check if user exists in Firestore BEFORE Firebase auth
+                self.checkUserExistsByEmail(email: email, googleUser: user)
             }
         }
     }
         
         
-    private func checkUserExistsInFirestore(uid: String) {
+    private func checkUserExistsByEmail(email: String, googleUser: GIDGoogleUser) {
         let db = Firestore.firestore()
         
-        db.collection("users").document(uid).getDocument { [self] document, error in
+        // Query Firestore to find user by email
+        db.collection("users")
+            .whereField("email", isEqualTo: email)
+            .getDocuments { [self] querySnapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        print("❌ Error checking user by email: \(error)")
+                        return
+                    }
+                    
+                    guard let documents = querySnapshot?.documents, !documents.isEmpty else {
+                        print("🚨 User doesn't exist with email: \(email)")
+                        self.showingCreateAccountAlert = true
+                        return
+                    }
+                    
+                    print("✅ User exists with email: \(email), proceeding with Firebase auth")
+                    
+                    // User exists, now authenticate with Firebase
+                    self.authenticateWithFirebase(googleUser: googleUser)
+                }
+            }
+    }
+    
+    private func authenticateWithFirebase(googleUser: GIDGoogleUser) {
+        guard let idToken = googleUser.idToken?.tokenString else {
+            print("❌ Failed to get Google ID token")
+            return
+        }
+        
+        let credential = GoogleAuthProvider.credential(
+            withIDToken: idToken,
+            accessToken: googleUser.accessToken.tokenString
+        )
+        
+        Auth.auth().signIn(with: credential) { authResult, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    self.errorMessage = "Error checking user profile: \(error.localizedDescription)"
-                    self.showingError = true
-                    try? Auth.auth().signOut()
+                    print("❌ Firebase auth error: \(error.localizedDescription)")
                     return
                 }
                 
-                guard let document = document, document.exists else {
-                    self.showingCreateAccountAlert = true
-                    try? Auth.auth().signOut()
-                    return
-                }
-                
-                // User exists - proceed with normal sign in
+                print("✅ Firebase authentication successful")
                 NotificationCenter.default.post(name: .dismissAuth, object: nil)
             }
         }
@@ -321,6 +333,64 @@ struct OrDividerView: View {
                 .frame(height: 1)
         }
         .padding(.vertical, 8)
+    }
+}
+
+struct CreateAccountPromptView: View {
+    let onCreateAccount: () -> Void
+    let onCancel: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Icon
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+            
+            VStack(spacing: 12) {
+                Text("Account Not Found")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Text("We couldn't find an account associated with this Google account. Would you like to create a new account?")
+                    .font(.system(size: 16))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+            
+            VStack(spacing: 12) {
+                // Create Account Button
+                Button(action: onCreateAccount) {
+                    Text("Create Account")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                }
+                
+                // Cancel Button
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .cornerRadius(12)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(24)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }
 
