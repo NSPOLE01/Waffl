@@ -17,6 +17,7 @@ struct SignInView: View {
     @State private var isLoading = false
     @State private var errorMessage = ""
     @State private var showingError = false
+    @State private var showingCreateAccountAlert = false
     
     var body: some View {
         NavigationView {
@@ -143,15 +144,52 @@ struct SignInView: View {
                     if let error = error {
                         self.errorMessage = error.localizedDescription
                         self.showingError = true
-                    } else {
-                        // Success - dismiss auth flow
-                        NotificationCenter.default.post(name: .dismissAuth, object: nil)
+                        return
                     }
+                    
+                    // Check if user exists in Firestore
+                    guard let firebaseUser = authResult?.user else {
+                        self.errorMessage = "Authentication failed"
+                        self.showingError = true
+                        return
+                    }
+                    
+                    self.checkUserExistsInFirestore(uid: firebaseUser.uid)
                 }
             }
         }
     }
+        
+        
+    private func checkUserExistsInFirestore(uid: String) {
+        let db = Firestore.firestore()
+        
+        db.collection("users").document(uid).getDocument { [self] document, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.errorMessage = "Error checking user profile: \(error.localizedDescription)"
+                    self.showingError = true
+                    // Sign out the user since we can't verify their profile
+                    try? Auth.auth().signOut()
+                    return
+                }
+                
+                guard let document = document, document.exists else {
+                    // User doesn't exist in Firestore - show create account alert
+                    self.showingCreateAccountAlert = true
+                    // Sign out the user since they need to create an account
+                    try? Auth.auth().signOut()
+                    return
+                }
+                
+                // User exists - proceed with normal sign in
+                NotificationCenter.default.post(name: .dismissAuth, object: nil)
+            }
+        }
+    }
 }
+    
+    
 
 struct SignInHeaderView: View {
     var body: some View {
