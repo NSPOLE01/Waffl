@@ -169,15 +169,12 @@ struct SignInView: View {
                 if let error = error {
                     self.errorMessage = "Error checking user profile: \(error.localizedDescription)"
                     self.showingError = true
-                    // Sign out the user since we can't verify their profile
                     try? Auth.auth().signOut()
                     return
                 }
                 
                 guard let document = document, document.exists else {
-                    // User doesn't exist in Firestore - show create account alert
                     self.showingCreateAccountAlert = true
-                    // Sign out the user since they need to create an account
                     try? Auth.auth().signOut()
                     return
                 }
