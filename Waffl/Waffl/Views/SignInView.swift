@@ -333,7 +333,6 @@ struct OrDividerView: View {
 }
 
 struct CreateAccountPromptView: View {
-    let onCreateAccount: () -> Void
     let onCancel: () -> Void
     
     var body: some View {
@@ -357,7 +356,9 @@ struct CreateAccountPromptView: View {
             
             VStack(spacing: 12) {
                 // Create Account Button
-                Button(action: onCreateAccount) {
+                Button(action: {
+                    NotificationCenter.default.post(name: .navigateToSignUp, object: nil)
+                }) {
                     Text("Create Account")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
