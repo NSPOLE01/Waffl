@@ -333,6 +333,7 @@ struct OrDividerView: View {
 }
 
 struct CreateAccountPromptView: View {
+    let onCreateAccount: () -> Void
     let onCancel: () -> Void
     
     var body: some View {
