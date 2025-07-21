@@ -100,7 +100,7 @@ struct SignInView: View {
                     if let authError = error as NSError?, authError.code == AuthErrorCode.wrongPassword.rawValue || authError.code == AuthErrorCode.userNotFound.rawValue {
                         signInErrorMessage = "Invalid email or password. Please check your credentials and try again."
                     } else {
-                        signInErrorMessage = "An error occurred while signing in. Please try again."
+                        signInErrorMessage = "Invalid email or password. Please check your credentials and try again."
                     }
                     
                     showingSignInError = true
