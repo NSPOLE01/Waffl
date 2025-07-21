@@ -146,18 +146,14 @@ struct SignInView: View {
                     self.isLoading = false
                     
                     if let error = error {
-                        print("❌ Error checking user by email: \(error)")
                         return
                     }
                     
                     guard let documents = querySnapshot?.documents, !documents.isEmpty else {
-                        print("🚨 User doesn't exist with email: \(email)")
                         self.showingCreateAccountAlert = true
                         return
                     }
-                    
-                    print("✅ User exists with email: \(email), proceeding with Firebase auth")
-                    
+                                        
                     self.authenticateWithFirebase(googleUser: googleUser)
                 }
             }
@@ -165,7 +161,6 @@ struct SignInView: View {
     
     private func authenticateWithFirebase(googleUser: GIDGoogleUser) {
         guard let idToken = googleUser.idToken?.tokenString else {
-            print("❌ Failed to get Google ID token")
             return
         }
         
@@ -177,11 +172,9 @@ struct SignInView: View {
         Auth.auth().signIn(with: credential) { authResult, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    print("❌ Firebase auth error: \(error.localizedDescription)")
                     return
                 }
                 
-                print("✅ Firebase authentication successful")
                 NotificationCenter.default.post(name: .dismissAuth, object: nil)
             }
         }
@@ -213,7 +206,6 @@ struct SignInFormView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Email Field
             VStack(alignment: .leading, spacing: 8) {
                 Text("Email")
                     .font(.system(size: 16, weight: .medium))
@@ -225,7 +217,6 @@ struct SignInFormView: View {
                     .autocapitalization(.none)
             }
             
-            // Password Field
             VStack(alignment: .leading, spacing: 8) {
                 Text("Password")
                     .font(.system(size: 16, weight: .medium))
@@ -248,7 +239,6 @@ struct SignInFormView: View {
                 .textFieldStyle(CustomTextFieldStyle())
             }
             
-            // Forgot Password
             HStack {
                 Spacer()
                 Button("Forgot Password?") {
