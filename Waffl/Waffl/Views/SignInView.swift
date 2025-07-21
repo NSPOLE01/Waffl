@@ -53,10 +53,8 @@ struct SignInView: View {
                     onSignIn: signInWithEmail
                 )
                 
-                // Or divider
                 OrDividerView()
                 
-                // Google Sign In Button
                 GoogleSignInButtonView(
                     isLoading: isLoading,
                     onGoogleSignIn: signInWithGoogle
@@ -64,7 +62,6 @@ struct SignInView: View {
                 
                 Spacer()
                 
-                // Sign Up Link
                 SignUpLinkView()
             }
             .padding(.horizontal, 24)
