@@ -19,6 +19,8 @@ struct SignInView: View {
     @State private var isShowingPassword = false
     @State private var isLoading = false
     @State private var showingCreateAccountAlert = false
+    @State private var showingSignInError = false
+    @State private var signInErrorMessage = ""
     
     var body: some View {
         NavigationView {
@@ -74,6 +76,11 @@ struct SignInView: View {
                     showingCreateAccountAlert = false
                 }
             }
+            .alert("Sign In Error", isPresented: $showingSignInError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(signInErrorMessage)
+            }
         }
     }
     
@@ -88,6 +95,15 @@ struct SignInView: View {
                 
                 if let error = error {
                     print("❌ Email sign-in error: \(error.localizedDescription)")
+                    
+                    // Set the error message based on the error type
+                    if let authError = error as NSError?, authError.code == AuthErrorCode.wrongPassword.rawValue || authError.code == AuthErrorCode.userNotFound.rawValue {
+                        signInErrorMessage = "Invalid email or password. Please check your credentials and try again."
+                    } else {
+                        signInErrorMessage = "An error occurred while signing in. Please try again."
+                    }
+                    
+                    showingSignInError = true
                 } else {
                     NotificationCenter.default.post(name: .dismissAuth, object: nil)
                 }
