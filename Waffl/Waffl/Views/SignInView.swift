@@ -88,9 +88,7 @@ struct SignInView: View {
                 
                 if let error = error {
                     print("❌ Email sign-in error: \(error.localizedDescription)")
-                    // Handle error silently or show a simple print
                 } else {
-                    // Success - dismiss auth flow
                     NotificationCenter.default.post(name: .dismissAuth, object: nil)
                 }
             }
@@ -103,11 +101,9 @@ struct SignInView: View {
             return
         }
         
-        // Configure Google Sign In
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
         
-        // Get the presenting view controller
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first,
               let rootViewController = window.rootViewController else {
@@ -134,7 +130,6 @@ struct SignInView: View {
                 
                 print("📧 Google user email: \(email)")
                 
-                // Check if user exists in Firestore BEFORE Firebase auth
                 self.checkUserExistsByEmail(email: email, googleUser: user)
             }
         }
@@ -144,7 +139,6 @@ struct SignInView: View {
     private func checkUserExistsByEmail(email: String, googleUser: GIDGoogleUser) {
         let db = Firestore.firestore()
         
-        // Query Firestore to find user by email
         db.collection("users")
             .whereField("email", isEqualTo: email)
             .getDocuments { [self] querySnapshot, error in
@@ -164,7 +158,6 @@ struct SignInView: View {
                     
                     print("✅ User exists with email: \(email), proceeding with Firebase auth")
                     
-                    // User exists, now authenticate with Firebase
                     self.authenticateWithFirebase(googleUser: googleUser)
                 }
             }
