@@ -356,7 +356,6 @@ struct CreateAccountPromptView: View {
             }
             
             VStack(spacing: 12) {
-                // Create Account Button
                 Button(action: {
                     NotificationCenter.default.post(name: .navigateToSignUp, object: nil)
                 }) {
@@ -369,7 +368,6 @@ struct CreateAccountPromptView: View {
                         .cornerRadius(12)
                 }
                 
-                // Cancel Button
                 Button(action: onCancel) {
                     Text("Cancel")
                         .font(.system(size: 16, weight: .medium))
