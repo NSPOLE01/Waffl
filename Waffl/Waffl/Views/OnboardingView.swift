@@ -25,7 +25,6 @@ struct OnboardingView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background gradient
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.orange.opacity(0.1),
@@ -38,9 +37,7 @@ struct OnboardingView: View {
                 .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Logo and App Name
                     VStack(spacing: 20) {
-                        // App Icon
                         AppLogoView()
                         
                         Text("Waffle Wednesday")
@@ -62,13 +59,11 @@ struct OnboardingView: View {
                         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                         .frame(height: 200)
                         
-                        // Page Indicators
                         PageIndicatorView(currentPage: currentPage, totalPages: features.count)
                     }
                     
                     Spacer()
                     
-                    // Sign In / Sign Up Buttons
                     OnboardingButtonsView()
                 }
             }
