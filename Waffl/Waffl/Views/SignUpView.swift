@@ -9,6 +9,7 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 import FirebaseFirestore
+import GoogleSignIn
 
 struct SignUpView: View {
     @State private var firstName = ""
@@ -64,6 +65,13 @@ struct SignUpView: View {
                         onSignUp: createAccount
                     )
                     
+                    OrDividerView()
+                    
+                    GoogleSignUpButtonView(
+                        isLoading: isLoading,
+                        onGoogleSignUp: signUpWithGoogle
+                    )
+                    
                     Spacer(minLength: 20)
                     
                     // Sign In Link
@@ -113,6 +121,130 @@ struct SignUpView: View {
     }
     
     private func saveUserProfile(uid: String) {
+        let db = Firestore.firestore()
+        
+        let userData: [String: Any] = [
+            "uid": uid,
+            "firstName": firstName,
+            "lastName": lastName,
+            "email": email,
+            "displayName": "\(firstName) \(lastName)",
+            "createdAt": Timestamp(date: Date()),
+            "updatedAt": Timestamp(date: Date()),
+            "videosUploaded": 0,
+            "friendsCount": 0,
+            "weeksParticipated": 0,
+            "profileImageURL": "" // Empty for now, can be updated later
+        ]
+        
+        db.collection("users").document(uid).setData(userData) { error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = "Account created but failed to save profile: \(error.localizedDescription)"
+                    self.showingError = true
+                } else {
+                    // Success - dismiss auth flow
+                    NotificationCenter.default.post(name: .dismissAuth, object: nil)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Google Sign Up
+    private func signUpWithGoogle() {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            print("No Firebase client ID found")
+            return
+        }
+        
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+        
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController else {
+            print("No root view controller found")
+            return
+        }
+        
+        isLoading = true
+        
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [self] result, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Google sign-up error: \(error.localizedDescription)")
+                    self.isLoading = false
+                    self.errorMessage = "Failed to sign up with Google. Please try again."
+                    self.showingError = true
+                    return
+                }
+                
+                guard let user = result?.user,
+                      let googleEmail = user.profile?.email,
+                      let googleGivenName = user.profile?.givenName,
+                      let googleFamilyName = user.profile?.familyName else {
+                    print("❌ Failed to get Google user info")
+                    self.isLoading = false
+                    self.errorMessage = "Failed to get user information from Google."
+                    self.showingError = true
+                    return
+                }
+                
+                print("📧 Google user email: \(googleEmail)")
+                print("👤 Google user name: \(googleGivenName) \(googleFamilyName)")
+                
+                self.createFirebaseAccountWithGoogle(
+                    googleUser: user,
+                    email: googleEmail,
+                    firstName: googleGivenName,
+                    lastName: googleFamilyName
+                )
+            }
+        }
+    }
+    
+    private func createFirebaseAccountWithGoogle(googleUser: GIDGoogleUser, email: String, firstName: String, lastName: String) {
+        guard let idToken = googleUser.idToken?.tokenString else {
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.errorMessage = "Failed to get authentication token from Google."
+                self.showingError = true
+            }
+            return
+        }
+        
+        let credential = GoogleAuthProvider.credential(
+            withIDToken: idToken,
+            accessToken: googleUser.accessToken.tokenString
+        )
+        
+        Auth.auth().signIn(with: credential) { authResult, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to create account: \(error.localizedDescription)"
+                    self.showingError = true
+                }
+                return
+            }
+            
+            guard let user = authResult?.user else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to create user account"
+                    self.showingError = true
+                }
+                return
+            }
+            
+            // Save user profile data to Firestore using Google info
+            self.saveGoogleUserProfile(uid: user.uid, email: email, firstName: firstName, lastName: lastName)
+        }
+    }
+    
+    private func saveGoogleUserProfile(uid: String, email: String, firstName: String, lastName: String) {
         let db = Firestore.firestore()
         
         let userData: [String: Any] = [
@@ -386,5 +518,48 @@ struct SignInLinkView: View {
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.orange)
         }
+    }
+}
+
+
+struct GoogleSignUpButtonView: View {
+    let isLoading: Bool
+    let onGoogleSignUp: () -> Void
+    
+    var body: some View {
+        Button(action: onGoogleSignUp) {
+            HStack(spacing: 12) {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.primary)
+                } else {
+                    // Google "G" logo recreation using SF Symbols
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 20, height: 20)
+                        
+                        Text("G")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Text("Sign up with Google")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(Color(UIColor.systemBackground))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            )
+            .cornerRadius(12)
+        }
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.6 : 1.0)
     }
 }
