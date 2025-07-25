@@ -27,7 +27,6 @@ struct FeatureCard: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Icon
             ZStack {
                 Circle()
                     .fill(Color.orange.opacity(0.1))
@@ -38,7 +37,6 @@ struct FeatureCard: View {
                     .foregroundColor(.orange)
             }
             
-            // Title and Description
             VStack(spacing: 12) {
                 Text(feature.title)
                     .font(.system(size: 24, weight: .bold))
