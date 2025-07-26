@@ -57,10 +57,9 @@ struct SignInView: View {
                 
                 OrDividerView()
                 
-                GoogleSignInButtonView(
-                    isLoading: isLoading,
-                    onGoogleSignIn: signInWithGoogle
-                )
+                GoogleSignInButton(action: signInWithGoogle)
+                    .frame(height: 54)
+                    .disabled(isLoading)
                 
                 Spacer()
                 
@@ -390,44 +389,4 @@ struct CreateAccountPromptView: View {
     }
 }
 
-struct GoogleSignInButtonView: View {
-    let isLoading: Bool
-    let onGoogleSignIn: () -> Void
-    
-    var body: some View {
-        Button(action: onGoogleSignIn) {
-            HStack(spacing: 12) {
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .foregroundColor(.primary)
-                } else {
-                    // Google "G" logo recreation using SF Symbols
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 20, height: 20)
-                        
-                        Text("G")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Text("Sign in with Google")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(Color(UIColor.systemBackground))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-            )
-            .cornerRadius(12)
-        }
-        .disabled(isLoading)
-        .opacity(isLoading ? 0.6 : 1.0)
-    }
-}
+
