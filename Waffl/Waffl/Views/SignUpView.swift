@@ -68,8 +68,8 @@ struct SignUpView: View {
                     
                     OrDividerView()
                     
-                    CustomGoogleSignInButton(
-                        text: "Sign up with Google",
+                    GooglePrebuiltButton(
+                        buttonType: .signUp,
                         isLoading: isLoading,
                         action: signUpWithGoogle
                     )

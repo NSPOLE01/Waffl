@@ -58,8 +58,8 @@ struct SignInView: View {
                 
                 OrDividerView()
                 
-                CustomGoogleSignInButton(
-                    text: "Sign in with Google",
+                GooglePrebuiltButton(
+                    buttonType: .signIn,
                     isLoading: isLoading,
                     action: signInWithGoogle
                 )
@@ -314,50 +314,47 @@ struct SignUpLinkView: View {
     }
 }
 
-struct CustomGoogleSignInButton: View {
-    let text: String
+enum GoogleButtonType {
+    case signIn
+    case signUp
+    
+    var imageName: String {
+        switch self {
+        case .signIn:
+            return "GoogleSignInButton"
+        case .signUp:
+            return "GoogleSignUpButton"
+        }
+    }
+}
+
+struct GooglePrebuiltButton: View {
+    let buttonType: GoogleButtonType
     let isLoading: Bool
     let action: () -> Void
     
-    @Environment(\.colorScheme) var colorScheme
-    
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            ZStack {
                 if isLoading {
+                    // Show a loading overlay
+                    Rectangle()
+                        .fill(Color.black.opacity(0.7))
+                        .cornerRadius(8)
+                    
                     ProgressView()
                         .scaleEffect(0.8)
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .foregroundColor(.white)
                 } else {
-                    Image("GoogleLogo")
+                    Image(buttonType.imageName)
                         .resizable()
-                        .frame(width: 20, height: 20)
-                    
-                    Text(text)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .aspectRatio(contentMode: .fit)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(
-                colorScheme == .dark ? 
-                    Color.black : 
-                    Color(UIColor.systemBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        colorScheme == .dark ? 
-                            Color.white.opacity(0.3) : 
-                            Color.gray.opacity(0.3), 
-                        lineWidth: 1
-                    )
-            )
-            .cornerRadius(12)
+            .frame(height: 44) // Standard Google button height
         }
         .disabled(isLoading)
-        .opacity(isLoading ? 0.6 : 1.0)
+        .opacity(isLoading ? 0.8 : 1.0)
     }
 }
 
