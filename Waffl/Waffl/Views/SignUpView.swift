@@ -10,6 +10,7 @@ import Firebase
 import FirebaseAuth
 import FirebaseFirestore
 import GoogleSignIn
+import GoogleSignInSwift
 
 struct SignUpView: View {
     @State private var firstName = ""
