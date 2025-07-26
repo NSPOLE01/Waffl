@@ -68,9 +68,11 @@ struct SignUpView: View {
                     
                     OrDividerView()
                     
-                    GoogleSignInButton(action: signUpWithGoogle)
-                        .frame(height: 54)
-                        .disabled(isLoading)
+                    CustomGoogleSignInButton(
+                        text: "Sign up with Google",
+                        isLoading: isLoading,
+                        action: signUpWithGoogle
+                    )
                     
                     Spacer(minLength: 20)
                     
@@ -520,5 +522,4 @@ struct SignInLinkView: View {
         }
     }
 }
-
 

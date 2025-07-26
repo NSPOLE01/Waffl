@@ -58,9 +58,11 @@ struct SignInView: View {
                 
                 OrDividerView()
                 
-                GoogleSignInButton(action: signInWithGoogle)
-                    .frame(height: 54)
-                    .disabled(isLoading)
+                CustomGoogleSignInButton(
+                    text: "Sign in with Google",
+                    isLoading: isLoading,
+                    action: signInWithGoogle
+                )
                 
                 Spacer()
                 
@@ -309,6 +311,53 @@ struct SignUpLinkView: View {
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.orange)
         }
+    }
+}
+
+struct CustomGoogleSignInButton: View {
+    let text: String
+    let isLoading: Bool
+    let action: () -> Void
+    
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                } else {
+                    Image("GoogleLogo")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                    
+                    Text(text)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(
+                colorScheme == .dark ? 
+                    Color.black : 
+                    Color(UIColor.systemBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        colorScheme == .dark ? 
+                            Color.white.opacity(0.3) : 
+                            Color.gray.opacity(0.3), 
+                        lineWidth: 1
+                    )
+            )
+            .cornerRadius(12)
+        }
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.6 : 1.0)
     }
 }
 
