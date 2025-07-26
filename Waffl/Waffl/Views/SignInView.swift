@@ -351,7 +351,7 @@ struct GooglePrebuiltButton: View {
                         .aspectRatio(contentMode: .fit)
                 }
             }
-            .frame(height: 44) // Standard Google button height
+            .frame(height: 54) // Match app's sign-in button height
         }
         .disabled(isLoading)
         .opacity(isLoading ? 0.8 : 1.0)
