@@ -38,17 +38,14 @@ struct SignInView: View {
                 }
                 .padding(.top, 20)
                 
-                // Header
                 SignInHeaderView()
                 
-                // Form
                 SignInFormView(
                     email: $email,
                     password: $password,
                     isShowingPassword: $isShowingPassword
                 )
                 
-                // Sign In Button
                 SignInButtonView(
                     email: email,
                     password: password,
