@@ -257,7 +257,6 @@ struct SignInFormView: View {
             HStack {
                 Spacer()
                 Button("Forgot Password?") {
-                    // Forgot password action
                 }
                 .font(.system(size: 14))
                 .foregroundColor(.orange)
