@@ -197,17 +197,20 @@ struct SignUpView: View {
                 print("📧 Google user email: \(googleEmail)")
                 print("👤 Google user name: \(googleGivenName) \(googleFamilyName)")
                 
+                let profileImageURL = user.profile?.imageURL(withDimension: 400)?.absoluteString ?? ""
+                
                 self.createFirebaseAccountWithGoogle(
                     googleUser: user,
                     email: googleEmail,
                     firstName: googleGivenName,
-                    lastName: googleFamilyName
+                    lastName: googleFamilyName,
+                    profileImageURL: profileImageURL
                 )
             }
         }
     }
     
-    private func createFirebaseAccountWithGoogle(googleUser: GIDGoogleUser, email: String, firstName: String, lastName: String) {
+    private func createFirebaseAccountWithGoogle(googleUser: GIDGoogleUser, email: String, firstName: String, lastName: String, profileImageURL: String) {
         guard let idToken = googleUser.idToken?.tokenString else {
             DispatchQueue.main.async {
                 self.isLoading = false
@@ -242,11 +245,11 @@ struct SignUpView: View {
             }
             
             // Save user profile data to Firestore using Google info
-            self.saveGoogleUserProfile(uid: user.uid, email: email, firstName: firstName, lastName: lastName)
+            self.saveGoogleUserProfile(uid: user.uid, email: email, firstName: firstName, lastName: lastName, profileImageURL: profileImageURL)
         }
     }
     
-    private func saveGoogleUserProfile(uid: String, email: String, firstName: String, lastName: String) {
+    private func saveGoogleUserProfile(uid: String, email: String, firstName: String, lastName: String, profileImageURL: String) {
         let db = Firestore.firestore()
         
         let userData: [String: Any] = [
@@ -260,7 +263,7 @@ struct SignUpView: View {
             "videosUploaded": 0,
             "friendsCount": 0,
             "weeksParticipated": 0,
-            "profileImageURL": "" // Empty for now, can be updated later
+            "profileImageURL": profileImageURL
         ]
         
         db.collection("users").document(uid).setData(userData) { error in
