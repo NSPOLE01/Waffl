@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import PhotosUI
 import Firebase
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseStorage
 
 struct EditProfileView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -20,11 +22,16 @@ struct EditProfileView: View {
     @State private var showingSuccessToast = false
     @State private var showingErrorToast = false
     @State private var toastMessage = ""
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoData: Data?
+    @State private var showingImagePicker = false
+    @State private var showingActionSheet = false
+    @State private var showingCamera = false
     
     var hasChanges: Bool {
         let currentFirstName = authManager.currentUserProfile?.firstName ?? ""
         let currentLastName = authManager.currentUserProfile?.lastName ?? ""
-        return firstName != currentFirstName || lastName != currentLastName
+        return firstName != currentFirstName || lastName != currentLastName || selectedPhotoData != nil
     }
     
     var body: some View {
@@ -41,30 +48,62 @@ struct EditProfileView: View {
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.primary)
                             
-                            ZStack {
-                                Circle()
-                                    .fill(Color.orange.opacity(0.1))
-                                    .frame(width: 120, height: 120)
-                                
-                                if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
-                                   !profileImageURL.isEmpty {
-                                    AsyncImage(url: URL(string: profileImageURL)) { image in
-                                        image
+                            Button(action: {
+                                showingActionSheet = true
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.orange.opacity(0.1))
+                                        .frame(width: 120, height: 120)
+                                    
+                                    if let selectedPhotoData = selectedPhotoData,
+                                       let uiImage = UIImage(data: selectedPhotoData) {
+                                        Image(uiImage: uiImage)
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
                                             .frame(width: 120, height: 120)
                                             .clipShape(Circle())
-                                    } placeholder: {
+                                    } else if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
+                                              !profileImageURL.isEmpty {
+                                        AsyncImage(url: URL(string: profileImageURL)) { image in
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 120, height: 120)
+                                                .clipShape(Circle())
+                                        } placeholder: {
+                                            Image(systemName: "person.fill")
+                                                .font(.system(size: 60))
+                                                .foregroundColor(.orange)
+                                        }
+                                    } else {
                                         Image(systemName: "person.fill")
                                             .font(.system(size: 60))
                                             .foregroundColor(.orange)
                                     }
-                                } else {
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 60))
-                                        .foregroundColor(.orange)
+                                    
+                                    // Camera overlay
+                                    VStack {
+                                        Spacer()
+                                        HStack {
+                                            Spacer()
+                                            Circle()
+                                                .fill(Color.orange)
+                                                .frame(width: 32, height: 32)
+                                                .overlay(
+                                                    Image(systemName: "camera.fill")
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.white)
+                                                )
+                                                .offset(x: -8, y: -8)
+                                        }
+                                    }
                                 }
                             }
+                            
+                            Text("Tap to change photo")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
                         }
                         
                         // Name Fields Section
@@ -162,6 +201,35 @@ struct EditProfileView: View {
         .onAppear {
             loadCurrentProfile()
         }
+        .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotoItem, matching: .images)
+        .onChange(of: selectedPhotoItem) { newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    selectedPhotoData = data
+                }
+            }
+        }
+        .actionSheet(isPresented: $showingActionSheet) {
+            ActionSheet(
+                title: Text("Select Profile Photo"),
+                buttons: [
+                    .default(Text("Photo Library")) {
+                        showingImagePicker = true
+                    },
+                    .default(Text("Camera")) {
+                        showingCamera = true
+                    },
+                    .cancel()
+                ]
+            )
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            ImagePicker(sourceType: .camera) { image in
+                if let imageData = image.jpegData(compressionQuality: 0.8) {
+                    selectedPhotoData = imageData
+                }
+            }
+        }
     }
     
     private func loadCurrentProfile() {
@@ -175,18 +243,57 @@ struct EditProfileView: View {
         guard let currentUser = Auth.auth().currentUser else { return }
         
         isLoading = true
-        updateUserProfile(userId: currentUser.uid)
+        
+        // If there's a new photo, upload it first
+        if let photoData = selectedPhotoData {
+            uploadProfilePhoto(photoData: photoData, userId: currentUser.uid) { [self] photoURL in
+                updateUserProfile(userId: currentUser.uid, profileImageURL: photoURL)
+            }
+        } else {
+            // No new photo, just update name
+            updateUserProfile(userId: currentUser.uid, profileImageURL: nil)
+        }
     }
     
-    private func updateUserProfile(userId: String) {
+    private func uploadProfilePhoto(photoData: Data, userId: String, completion: @escaping (String?) -> Void) {
+        let storage = Storage.storage()
+        let storageRef = storage.reference()
+        let profileImageRef = storageRef.child("profile_images/\(userId).jpg")
+        
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        
+        profileImageRef.putData(photoData, metadata: metadata) { metadata, error in
+            if let error = error {
+                print("❌ Error uploading image: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            profileImageRef.downloadURL { url, error in
+                if let error = error {
+                    print("❌ Error getting download URL: \(error.localizedDescription)")
+                    completion(nil)
+                } else {
+                    completion(url?.absoluteString)
+                }
+            }
+        }
+    }
+    
+    private func updateUserProfile(userId: String, profileImageURL: String?) {
         let db = Firestore.firestore()
         
-        let updateData: [String: Any] = [
+        var updateData: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
             "displayName": "\(firstName) \(lastName)",
             "updatedAt": Timestamp(date: Date())
         ]
+        
+        if let profileImageURL = profileImageURL {
+            updateData["profileImageURL"] = profileImageURL
+        }
         
         db.collection("users").document(userId).updateData(updateData) { [self] error in
             DispatchQueue.main.async {
@@ -212,6 +319,49 @@ struct EditProfileView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - ImagePicker for Camera
+struct ImagePicker: UIViewControllerRepresentable {
+    let sourceType: UIImagePickerController.SourceType
+    let onImageSelected: (UIImage) -> Void
+    @Environment(\.presentationMode) var presentationMode
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = sourceType
+        picker.delegate = context.coordinator
+        picker.allowsEditing = true
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let editedImage = info[.editedImage] as? UIImage {
+                parent.onImageSelected(editedImage)
+            } else if let originalImage = info[.originalImage] as? UIImage {
+                parent.onImageSelected(originalImage)
+            }
+            
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
         }
     }
 }
