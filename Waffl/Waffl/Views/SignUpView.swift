@@ -27,7 +27,7 @@ struct SignUpView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 30) {
+                VStack(spacing: 20) {
                     // Back Button
                     HStack {
                         Button(action: {
@@ -74,7 +74,7 @@ struct SignUpView: View {
                         action: signUpWithGoogle
                     )
                     
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 10)
                     
                     // Sign In Link
                     SignInLinkView()
@@ -284,17 +284,17 @@ struct SignUpView: View {
 
 struct SignUpHeaderView: View {
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Text("Create Account")
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundColor(Color.primary)
             
             Text("Join Waffle Wednesday and start sharing your weekly moments")
-                .font(.system(size: 16))
+                .font(.system(size: 15))
                 .foregroundColor(Color.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, 20)
+        .padding(.top, 10)
     }
 }
 
@@ -308,10 +308,10 @@ struct SignUpFormView: View {
     @Binding var isShowingConfirmPassword: Bool
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             // Name Fields
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("First Name")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(Color.primary)
@@ -321,7 +321,7 @@ struct SignUpFormView: View {
                         .autocapitalization(.words)
                 }
                 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Last Name")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(Color.primary)
