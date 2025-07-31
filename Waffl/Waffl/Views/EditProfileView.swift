@@ -237,6 +237,33 @@ struct EditProfileView: View {
             firstName = profile.firstName
             lastName = profile.lastName
         }
+        
+        // Test Firebase Storage connection
+        testStorageConnection()
+    }
+    
+    private func testStorageConnection() {
+        guard let currentUser = Auth.auth().currentUser else {
+            print("❌ No user for storage test")
+            return
+        }
+        
+        print("🧪 Testing storage connection for user: \(currentUser.uid)")
+        
+        let storage = Storage.storage()
+        let storageRef = storage.reference()
+        let testRef = storageRef.child("profile_images/")
+        
+        // Try to list objects (this will help test permissions)
+        testRef.listAll { result, error in
+            if let error = error {
+                print("❌ Storage permission test failed: \(error)")
+                print("❌ This suggests a permissions issue with Firebase Storage rules")
+            } else {
+                print("✅ Storage permissions appear to be working")
+                print("📂 Found \(result?.items.count ?? 0) items in profile_images/")
+            }
+        }
     }
     
     private func saveChanges() {
@@ -256,29 +283,129 @@ struct EditProfileView: View {
     }
     
     private func uploadProfilePhoto(photoData: Data, userId: String, completion: @escaping (String?) -> Void) {
+        print("🔄 Starting photo upload for user: \(userId)")
+        print("📱 Photo data size: \(photoData.count) bytes")
+        
+        // Check if user is authenticated
+        guard let currentUser = Auth.auth().currentUser else {
+            print("❌ No authenticated user found")
+            DispatchQueue.main.async {
+                self.toastMessage = "User not authenticated"
+                self.showingErrorToast = true
+                self.isLoading = false
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    self.showingErrorToast = false
+                }
+            }
+            completion(nil)
+            return
+        }
+        
+        print("✅ User authenticated: \(currentUser.uid)")
+        
+        // Try alternative upload method - upload to root level first
+        uploadToRootLevel(photoData: photoData, userId: userId, completion: completion)
+    }
+    
+    private func uploadToRootLevel(photoData: Data, userId: String, completion: @escaping (String?) -> Void) {
         let storage = Storage.storage()
         let storageRef = storage.reference()
-        let profileImageRef = storageRef.child("profile_images/\(userId).jpg")
+        
+        // Try uploading directly to root level first, then move to folder
+        let fileName = "\(userId)_profile.jpg"
+        let imageRef = storageRef.child(fileName)
+        
+        print("📂 Trying root upload path: \(fileName)")
         
         let metadata = StorageMetadata()
         metadata.contentType = "image/jpeg"
         
-        profileImageRef.putData(photoData, metadata: metadata) { metadata, error in
+        imageRef.putData(photoData, metadata: metadata) { uploadMetadata, error in
             if let error = error {
-                print("❌ Error uploading image: \(error.localizedDescription)")
+                print("❌ Root upload failed: \(error.localizedDescription)")
+                // If root upload fails, try the original method with different path
+                self.uploadWithAlternatePath(photoData: photoData, userId: userId, completion: completion)
+                return
+            }
+            
+            print("✅ Root upload successful! Getting download URL...")
+            
+            imageRef.downloadURL { url, error in
+                if let error = error {
+                    print("❌ Error getting download URL from root: \(error.localizedDescription)")
+                    completion(nil)
+                } else if let url = url {
+                    print("✅ Root download URL obtained: \(url.absoluteString)")
+                    completion(url.absoluteString)
+                } else {
+                    print("❌ No URL returned from root upload")
+                    completion(nil)
+                }
+            }
+        }
+    }
+    
+    private func uploadWithAlternatePath(photoData: Data, userId: String, completion: @escaping (String?) -> Void) {
+        let storage = Storage.storage()
+        let storageRef = storage.reference()
+        
+        // Try different path structures
+        let alternatePaths = [
+            "images/\(userId).jpg",
+            "user_images/\(userId).jpg",
+            "\(userId)/profile.jpg"
+        ]
+        
+        func tryPath(_ index: Int) {
+            guard index < alternatePaths.count else {
+                print("❌ All upload paths failed")
+                DispatchQueue.main.async {
+                    self.toastMessage = "Upload failed: Storage not accessible"
+                    self.showingErrorToast = true
+                    self.isLoading = false
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        self.showingErrorToast = false
+                    }
+                }
                 completion(nil)
                 return
             }
             
-            profileImageRef.downloadURL { url, error in
+            let path = alternatePaths[index]
+            let imageRef = storageRef.child(path)
+            
+            print("📂 Trying alternate path: \(path)")
+            
+            let metadata = StorageMetadata()
+            metadata.contentType = "image/jpeg"
+            
+            imageRef.putData(photoData, metadata: metadata) { uploadMetadata, error in
                 if let error = error {
-                    print("❌ Error getting download URL: \(error.localizedDescription)")
-                    completion(nil)
-                } else {
-                    completion(url?.absoluteString)
+                    print("❌ Path \(path) failed: \(error.localizedDescription)")
+                    tryPath(index + 1) // Try next path
+                    return
+                }
+                
+                print("✅ Upload successful with path: \(path)")
+                
+                imageRef.downloadURL { url, error in
+                    if let error = error {
+                        print("❌ Error getting download URL for \(path): \(error.localizedDescription)")
+                        tryPath(index + 1) // Try next path
+                    } else if let url = url {
+                        print("✅ Download URL obtained for \(path): \(url.absoluteString)")
+                        completion(url.absoluteString)
+                    } else {
+                        print("❌ No URL returned for \(path)")
+                        tryPath(index + 1) // Try next path
+                    }
                 }
             }
         }
+        
+        tryPath(0)
     }
     
     private func updateUserProfile(userId: String, profileImageURL: String?) {
