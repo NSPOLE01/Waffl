@@ -10,6 +10,7 @@ import SwiftUI
 struct AccountView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var showingSignOut = false
+    @State private var showingEditProfile = false
     
     var body: some View {
         NavigationView {
@@ -90,7 +91,7 @@ struct AccountView: View {
                 // Menu Options
                 VStack(spacing: 16) {
                     AccountMenuButton(title: "Edit Profile", icon: "person.circle") {
-                        // TODO: Navigate to edit profile
+                        showingEditProfile = true
                     }
                     
                     AccountMenuButton(title: "Friends", icon: "person.2") {
@@ -140,6 +141,9 @@ struct AccountView: View {
                 }
             } message: {
                 Text("Are you sure you want to sign out?")
+            }
+            .fullScreenCover(isPresented: $showingEditProfile) {
+                EditProfileView()
             }
         }
     }

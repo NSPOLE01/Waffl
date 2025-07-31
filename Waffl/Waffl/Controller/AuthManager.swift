@@ -118,6 +118,11 @@ class AuthManager: ObservableObject {
         }
     }
     
+    func refreshUserProfile() {
+        guard let uid = currentUser?.uid else { return }
+        fetchUserProfile(uid: uid)
+    }
+    
     func incrementWeeksParticipated() {
         guard let uid = currentUser?.uid else { return }
         
