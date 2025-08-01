@@ -61,7 +61,6 @@ struct FriendsView: View {
     @State private var showingConfirmation = false
     @State private var confirmationAction: ConfirmationAction?
     @State private var selectedUser: WaffleUser?
-    @State private var showingUserProfile = false
     
     var body: some View {
         NavigationView {
@@ -95,8 +94,9 @@ struct FriendsView: View {
                             LazyVStack(spacing: 12) {
                                 ForEach(followingFriends) { friend in
                                     FriendRowView(user: friend, isFollowing: true, onTap: {
+                                        print("DEBUG: Tapping on friend: \(friend.displayName)")
                                         selectedUser = friend
-                                        showingUserProfile = true
+                                        print("DEBUG: Set selectedUser to: \(selectedUser?.displayName ?? "nil")")
                                     }) {
                                         confirmationAction = .unfollow(friend)
                                         showingConfirmation = true
@@ -150,8 +150,9 @@ struct FriendsView: View {
                             LazyVStack(spacing: 12) {
                                 ForEach(filteredDiscoverUsers) { user in
                                     FriendRowView(user: user, isFollowing: false, onTap: {
+                                        print("DEBUG: Tapping on discover user: \(user.displayName)")
                                         selectedUser = user
-                                        showingUserProfile = true
+                                        print("DEBUG: Set selectedUser to: \(selectedUser?.displayName ?? "nil")")
                                     }) {
                                         confirmationAction = .follow(user)
                                         showingConfirmation = true
@@ -185,9 +186,30 @@ struct FriendsView: View {
         .overlay(
             confirmationModalOverlay
         )
-        .fullScreenCover(isPresented: $showingUserProfile) {
-            if let selectedUser = selectedUser {
-                UserProfileView(user: selectedUser)
+        .sheet(item: $selectedUser) { user in
+            NavigationView {
+                VStack {
+                    Text("DEBUG: User Profile for \(user.displayName)")
+                        .font(.title)
+                        .padding()
+                    
+                    Text("Email: \(user.email)")
+                        .padding()
+                    
+                    Text("Friends: \(user.friendsCount)")
+                        .padding()
+                    
+                    Button("Close") {
+                        selectedUser = nil
+                    }
+                    .padding()
+                    
+                    Spacer()
+                }
+                .navigationTitle("Debug Profile")
+                .onAppear {
+                    print("DEBUG: Sheet appeared with user: \(user.displayName)")
+                }
             }
         }
     }
@@ -537,36 +559,42 @@ struct FriendRowView: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Profile Picture
-            AsyncImage(url: URL(string: user.profileImageURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-            } placeholder: {
-                Circle()
-                    .fill(Color.orange.opacity(0.1))
-                    .frame(width: 50, height: 50)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.orange)
-                    )
-            }
-            
-            // User Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(user.displayName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+            // Profile Picture and User Info - Tappable area
+            HStack(spacing: 12) {
+                AsyncImage(url: URL(string: user.profileImageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                } placeholder: {
+                    Circle()
+                        .fill(Color.orange.opacity(0.1))
+                        .frame(width: 50, height: 50)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.orange)
+                        )
+                }
                 
-                Text(user.email)
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                // User Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(user.displayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(user.email)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
             }
-            
-            Spacer()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onTap()
+            }
             
             // Follow/Unfollow Button
             Button(action: onAction) {
@@ -588,9 +616,6 @@ struct FriendRowView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .onTapGesture {
-            onTap()
-        }
     }
 }
 

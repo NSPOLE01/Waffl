@@ -129,6 +129,7 @@ struct UserProfileView: View {
             }
         }
         .onAppear {
+            print("DEBUG: UserProfileView appeared for user: \(user.displayName)")
             checkFollowStatus()
         }
         .overlay(

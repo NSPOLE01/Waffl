@@ -8,7 +8,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct WaffleUser: Codable, Identifiable {
+struct WaffleUser: Codable, Identifiable, Hashable {
     let id: String // This will be the Firebase Auth UID
     let uid: String
     let firstName: String
@@ -25,6 +25,16 @@ struct WaffleUser: Codable, Identifiable {
     // Computed properties
     var fullName: String {
         return "\(firstName) \(lastName)"
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(uid)
+    }
+    
+    static func == (lhs: WaffleUser, rhs: WaffleUser) -> Bool {
+        return lhs.id == rhs.id && lhs.uid == rhs.uid
     }
     
     // Initialize from Firestore document
