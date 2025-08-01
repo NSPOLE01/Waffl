@@ -404,19 +404,23 @@ struct FriendRowView: View {
 
 struct EmptyFriendsView: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.2.slash")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-            
-            Text("No Friends Yet")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-            
-            Text("Start following friends to see them here")
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+        HStack {
+            Spacer()
+            VStack(spacing: 16) {
+                Image(systemName: "person.2.slash")
+                    .font(.system(size: 48))
+                    .foregroundColor(.secondary)
+                
+                Text("No Friends Yet")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text("Start following friends to see them here")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            Spacer()
         }
         .padding(.vertical, 32)
     }
