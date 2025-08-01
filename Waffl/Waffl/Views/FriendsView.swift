@@ -94,9 +94,7 @@ struct FriendsView: View {
                             LazyVStack(spacing: 12) {
                                 ForEach(followingFriends) { friend in
                                     FriendRowView(user: friend, isFollowing: true, onTap: {
-                                        print("DEBUG: Tapping on friend: \(friend.displayName)")
                                         selectedUser = friend
-                                        print("DEBUG: Set selectedUser to: \(selectedUser?.displayName ?? "nil")")
                                     }) {
                                         confirmationAction = .unfollow(friend)
                                         showingConfirmation = true
@@ -150,9 +148,7 @@ struct FriendsView: View {
                             LazyVStack(spacing: 12) {
                                 ForEach(filteredDiscoverUsers) { user in
                                     FriendRowView(user: user, isFollowing: false, onTap: {
-                                        print("DEBUG: Tapping on discover user: \(user.displayName)")
                                         selectedUser = user
-                                        print("DEBUG: Set selectedUser to: \(selectedUser?.displayName ?? "nil")")
                                     }) {
                                         confirmationAction = .follow(user)
                                         showingConfirmation = true
@@ -187,30 +183,7 @@ struct FriendsView: View {
             confirmationModalOverlay
         )
         .sheet(item: $selectedUser) { user in
-            NavigationView {
-                VStack {
-                    Text("DEBUG: User Profile for \(user.displayName)")
-                        .font(.title)
-                        .padding()
-                    
-                    Text("Email: \(user.email)")
-                        .padding()
-                    
-                    Text("Friends: \(user.friendsCount)")
-                        .padding()
-                    
-                    Button("Close") {
-                        selectedUser = nil
-                    }
-                    .padding()
-                    
-                    Spacer()
-                }
-                .navigationTitle("Debug Profile")
-                .onAppear {
-                    print("DEBUG: Sheet appeared with user: \(user.displayName)")
-                }
-            }
+            UserProfileView(user: user)
         }
     }
     

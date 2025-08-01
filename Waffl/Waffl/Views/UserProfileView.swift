@@ -13,7 +13,7 @@ import FirebaseFirestore
 struct UserProfileView: View {
     let user: WaffleUser
     @EnvironmentObject var authManager: AuthManager
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     @State private var isFollowing = false
     @State private var isLoadingFollowStatus = true
@@ -122,14 +122,13 @@ struct UserProfileView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                     .foregroundColor(.orange)
                 }
             }
         }
         .onAppear {
-            print("DEBUG: UserProfileView appeared for user: \(user.displayName)")
             checkFollowStatus()
         }
         .overlay(
