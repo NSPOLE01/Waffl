@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct BrowseVideosView: View {
+    @EnvironmentObject var authManager: AuthManager
     @State private var videos: [WaffleVideo] = []
     @State private var showingFriends = false
     
@@ -48,7 +49,7 @@ struct BrowseVideosView: View {
                             Button(action: {
                                 showingFriends = true
                             }) {
-                                StatCard(title: "Friends", value: "12", icon: "person.2.fill")
+                                StatCard(title: "Friends", value: "\(authManager.currentUserProfile?.friendsCount ?? 0)", icon: "person.2.fill")
                             }
                             .buttonStyle(PlainButtonStyle())
                             
