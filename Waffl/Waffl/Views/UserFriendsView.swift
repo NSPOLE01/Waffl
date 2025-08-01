@@ -1,5 +1,5 @@
 //
-//  FriendsView.swift
+//  UserFriendsView.swift
 //  Waffl
 //
 //  Created by Claude on 8/1/25.
@@ -10,190 +10,105 @@ import Firebase
 import FirebaseAuth
 import FirebaseFirestore
 
-enum ConfirmationAction {
-    case follow(WaffleUser)
-    case unfollow(WaffleUser)
-    
-    var title: String {
-        switch self {
-        case .follow(let user):
-            return "Follow \(user.firstName)?"
-        case .unfollow(let user):
-            return "Unfollow \(user.firstName)?"
-        }
-    }
-    
-    var message: String {
-        switch self {
-        case .follow(let user):
-            return "Do you want to follow \(user.displayName)?"
-        case .unfollow(let user):
-            return "Do you want to unfollow \(user.displayName)? You can always follow them again later."
-        }
-    }
-    
-    var actionText: String {
-        switch self {
-        case .follow:
-            return "Follow"
-        case .unfollow:
-            return "Unfollow"
-        }
-    }
-    
-    var user: WaffleUser {
-        switch self {
-        case .follow(let user), .unfollow(let user):
-            return user
-        }
-    }
-}
-
-struct FriendsView: View {
+struct UserFriendsView: View {
+    let user: WaffleUser
     @EnvironmentObject var authManager: AuthManager
-    @Environment(\.presentationMode) var presentationMode
     
-    @State private var followingFriends: [WaffleUser] = []
-    @State private var discoverUsers: [WaffleUser] = []
-    @State private var isLoadingFollowing = true
-    @State private var isLoadingDiscover = true
-    @State private var searchText = ""
+    @State private var userFriends: [WaffleUser] = []
+    @State private var isLoadingFriends = true
     @State private var showingConfirmation = false
     @State private var confirmationAction: ConfirmationAction?
+    @State private var myFollowingStatus: [String: Bool] = [:]
+    @State private var isFollowingThisUser = false
+    @State private var isCheckingFollowStatus = true
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Following Friends Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Following")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text("\(followingFriends.count)")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        if isLoadingFollowing {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Spacer()
-                            }
-                            .padding(.vertical, 20)
-                        } else if followingFriends.isEmpty {
-                            EmptyFriendsView()
-                        } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(followingFriends) { friend in
-                                    FriendRowView(user: friend, isFollowing: true, onTap: {
-                                        // This will be handled by NavigationLink inside FriendRowView
-                                    }) {
-                                        confirmationAction = .unfollow(friend)
-                                        showingConfirmation = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Divider()
-                        .padding(.vertical, 8)
-                    
-                    // Discover Friends Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Discover Friends")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Button(action: refreshDiscoverUsers) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.orange)
-                            }
-                        }
-                        
-                        // Search Bar
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.secondary)
-                            
-                            TextField("Search users...", text: $searchText)
-                                .textFieldStyle(PlainTextFieldStyle())
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color(UIColor.systemGray6))
-                        .cornerRadius(10)
-                        
-                        if isLoadingDiscover {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Spacer()
-                            }
-                            .padding(.vertical, 20)
-                        } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(filteredDiscoverUsers) { user in
-                                    FriendRowView(user: user, isFollowing: false, onTap: {
-                                        // This will be handled by NavigationLink inside FriendRowView
-                                    }) {
-                                        confirmationAction = .follow(user)
-                                        showingConfirmation = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer(minLength: 20)
+        VStack(spacing: 20) {
+            if isCheckingFollowStatus {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading...")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-            }
-            .navigationTitle("Friends")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
-                        presentationMode.wrappedValue.dismiss()
+                .padding(.top, 40)
+            } else if !isFollowingThisUser {
+                // Restricted access view
+                VStack(spacing: 20) {
+                    Image(systemName: "lock.circle")
+                        .font(.system(size: 60))
+                        .foregroundColor(.orange)
+                    
+                    VStack(spacing: 8) {
+                        Text("Friends List Private")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Follow \(user.firstName) to see who they're following")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .foregroundColor(.orange)
+                }
+                .padding(.top, 60)
+            } else if isLoadingFriends {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading \(user.firstName)'s friends...")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 40)
+            } else if userFriends.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "person.2.slash")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(user.firstName) has no friends yet")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text("When they follow people, you'll see them here")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 40)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(userFriends) { friend in
+                            UserFriendRowView(
+                                user: friend,
+                                isFollowing: myFollowingStatus[friend.uid] ?? false
+                            ) {
+                                if myFollowingStatus[friend.uid] == true {
+                                    confirmationAction = .unfollow(friend)
+                                } else {
+                                    confirmationAction = .follow(friend)
+                                }
+                                showingConfirmation = true
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
                 }
             }
+            
+            Spacer()
         }
+        .navigationTitle("\(user.firstName)'s Friends")
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            loadFollowingFriends()
-            loadDiscoverUsers()
+            checkIfFollowingUser()
         }
         .overlay(
             confirmationModalOverlay
         )
-    }
-    
-    var filteredDiscoverUsers: [WaffleUser] {
-        if searchText.isEmpty {
-            return discoverUsers
-        } else {
-            return discoverUsers.filter { user in
-                user.displayName.localizedCaseInsensitiveContains(searchText) ||
-                user.firstName.localizedCaseInsensitiveContains(searchText) ||
-                user.lastName.localizedCaseInsensitiveContains(searchText) ||
-                user.email.localizedCaseInsensitiveContains(searchText)
-            }
-        }
     }
     
     @ViewBuilder
@@ -316,48 +231,71 @@ struct FriendsView: View {
         }
     }
     
-    private func performConfirmationAction(_ action: ConfirmationAction) {
-        switch action {
-        case .follow(let user):
-            followUser(user)
-        case .unfollow(let user):
-            unfollowUser(user)
+    private func checkIfFollowingUser() {
+        guard let currentUserId = authManager.currentUser?.uid else { 
+            isCheckingFollowStatus = false
+            return 
         }
-    }
-    
-    // MARK: - Data Loading
-    
-    private func loadFollowingFriends() {
-        guard let currentUserId = authManager.currentUser?.uid else { return }
         
-        isLoadingFollowing = true
+        // Don't need to check if viewing own friends
+        if currentUserId == user.uid {
+            isFollowingThisUser = true
+            isCheckingFollowStatus = false
+            loadUserFriends()
+            return
+        }
         
         let db = Firestore.firestore()
         
+        db.collection("users").document(currentUserId).collection("following").document(user.uid).getDocument { document, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Error checking follow status: \(error.localizedDescription)")
+                    self.isFollowingThisUser = false
+                } else {
+                    self.isFollowingThisUser = document?.exists ?? false
+                }
+                
+                self.isCheckingFollowStatus = false
+                
+                // Load friends if following
+                if self.isFollowingThisUser {
+                    self.loadUserFriends()
+                }
+            }
+        }
+    }
+    
+    private func loadUserFriends() {
+        guard let currentUserId = authManager.currentUser?.uid else { return }
+        
+        isLoadingFriends = true
+        let db = Firestore.firestore()
+        
         // Get the user's following list
-        db.collection("users").document(currentUserId).collection("following").getDocuments { snapshot, error in
+        db.collection("users").document(user.uid).collection("following").getDocuments { snapshot, error in
             if let error = error {
-                print("❌ Error loading following: \(error.localizedDescription)")
+                print("❌ Error loading user's friends: \(error.localizedDescription)")
                 DispatchQueue.main.async {
-                    self.isLoadingFollowing = false
+                    self.isLoadingFriends = false
                 }
                 return
             }
             
             guard let documents = snapshot?.documents else {
                 DispatchQueue.main.async {
-                    self.isLoadingFollowing = false
+                    self.isLoadingFriends = false
                 }
                 return
             }
             
-            // Get the user IDs of followed users
+            // Get the user IDs of their friends
             let followingIds = documents.compactMap { $0.documentID }
             
             if followingIds.isEmpty {
                 DispatchQueue.main.async {
-                    self.followingFriends = []
-                    self.isLoadingFollowing = false
+                    self.userFriends = []
+                    self.isLoadingFriends = false
                 }
                 return
             }
@@ -367,7 +305,7 @@ struct FriendsView: View {
                 if let error = error {
                     print("❌ Error loading friend details: \(error.localizedDescription)")
                     DispatchQueue.main.async {
-                        self.isLoadingFollowing = false
+                        self.isLoadingFriends = false
                     }
                     return
                 }
@@ -376,59 +314,44 @@ struct FriendsView: View {
                     try? WaffleUser(from: document)
                 } ?? []
                 
-                DispatchQueue.main.async {
-                    self.followingFriends = friends
-                    self.isLoadingFollowing = false
-                }
-            }
-        }
-    }
-    
-    private func loadDiscoverUsers() {
-        guard let currentUserId = authManager.currentUser?.uid else { return }
-        
-        isLoadingDiscover = true
-        
-        let db = Firestore.firestore()
-        
-        // First, get the current user's following list
-        db.collection("users").document(currentUserId).collection("following").getDocuments { snapshot, error in
-            let followingIds = snapshot?.documents.compactMap { $0.documentID } ?? []
-            var excludeIds = followingIds
-            excludeIds.append(currentUserId) // Also exclude the current user
-            
-            // Get users that are not being followed and not the current user
-            db.collection("users").limit(to: 20).getDocuments { snapshot, error in
-                if let error = error {
-                    print("❌ Error loading discover users: \(error.localizedDescription)")
+                // Now check which of these friends I'm following
+                self.checkMyFollowingStatus(for: friends, currentUserId: currentUserId) {
                     DispatchQueue.main.async {
-                        self.isLoadingDiscover = false
+                        self.userFriends = friends
+                        self.isLoadingFriends = false
                     }
-                    return
-                }
-                
-                let allUsers = snapshot?.documents.compactMap { document in
-                    try? WaffleUser(from: document)
-                } ?? []
-                
-                // Filter out users that are already being followed or are the current user
-                let discoverableUsers = allUsers.filter { user in
-                    !excludeIds.contains(user.uid)
-                }
-                
-                DispatchQueue.main.async {
-                    self.discoverUsers = discoverableUsers
-                    self.isLoadingDiscover = false
                 }
             }
         }
     }
     
-    private func refreshDiscoverUsers() {
-        loadDiscoverUsers()
+    private func checkMyFollowingStatus(for friends: [WaffleUser], currentUserId: String, completion: @escaping () -> Void) {
+        let db = Firestore.firestore()
+        let dispatchGroup = DispatchGroup()
+        
+        for friend in friends {
+            dispatchGroup.enter()
+            db.collection("users").document(currentUserId).collection("following").document(friend.uid).getDocument { document, error in
+                DispatchQueue.main.async {
+                    self.myFollowingStatus[friend.uid] = document?.exists ?? false
+                    dispatchGroup.leave()
+                }
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            completion()
+        }
     }
     
-    // MARK: - Friend Actions
+    private func performConfirmationAction(_ action: ConfirmationAction) {
+        switch action {
+        case .follow(let user):
+            followUser(user)
+        case .unfollow(let user):
+            unfollowUser(user)
+        }
+    }
     
     private func followUser(_ user: WaffleUser) {
         guard let currentUserId = authManager.currentUser?.uid else { return }
@@ -462,11 +385,7 @@ struct FriendsView: View {
         
         // Update UI immediately
         DispatchQueue.main.async {
-            // Move user from discover to following
-            if let index = self.discoverUsers.firstIndex(where: { $0.uid == user.uid }) {
-                let followedUser = self.discoverUsers.remove(at: index)
-                self.followingFriends.append(followedUser)
-            }
+            self.myFollowingStatus[user.uid] = true
         }
     }
     
@@ -496,11 +415,7 @@ struct FriendsView: View {
         
         // Update UI immediately
         DispatchQueue.main.async {
-            // Move user from following to discover
-            if let index = self.followingFriends.firstIndex(where: { $0.uid == user.uid }) {
-                let unfollowedUser = self.followingFriends.remove(at: index)
-                self.discoverUsers.insert(unfollowedUser, at: 0)
-            }
+            self.myFollowingStatus[user.uid] = false
         }
     }
     
@@ -518,12 +433,9 @@ struct FriendsView: View {
     }
 }
 
-// MARK: - Supporting Views
-
-struct FriendRowView: View {
+struct UserFriendRowView: View {
     let user: WaffleUser
     let isFollowing: Bool
-    let onTap: () -> Void
     let onAction: () -> Void
     
     var body: some View {
@@ -584,29 +496,5 @@ struct FriendRowView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-}
-
-struct EmptyFriendsView: View {
-    var body: some View {
-        HStack {
-            Spacer()
-            VStack(spacing: 16) {
-                Image(systemName: "person.2.slash")
-                    .font(.system(size: 48))
-                    .foregroundColor(.secondary)
-                
-                Text("No Friends Yet")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text("Start following friends to see them here")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Spacer()
-        }
-        .padding(.vertical, 32)
     }
 }

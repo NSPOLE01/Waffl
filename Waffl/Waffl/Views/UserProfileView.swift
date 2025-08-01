@@ -13,7 +13,6 @@ import FirebaseFirestore
 struct UserProfileView: View {
     let user: WaffleUser
     @EnvironmentObject var authManager: AuthManager
-    @Environment(\.dismiss) private var dismiss
     
     @State private var isFollowing = false
     @State private var isLoadingFollowStatus = true
@@ -21,8 +20,7 @@ struct UserProfileView: View {
     @State private var confirmationAction: ConfirmationAction?
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 30) {
+        VStack(spacing: 30) {
                 // Profile Header
                 VStack(spacing: 16) {
                     // Profile Picture
@@ -57,14 +55,18 @@ struct UserProfileView: View {
                 
                 // Stats
                 HStack(spacing: 40) {
-                    VStack(spacing: 8) {
-                        Text("\(user.friendsCount)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Friends")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                    // Friends - Always clickable
+                    NavigationLink(destination: UserFriendsView(user: user)) {
+                        VStack(spacing: 8) {
+                            Text("\(user.friendsCount)")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Friends")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     VStack(spacing: 8) {
                         Text("\(user.videosUploaded)")
@@ -118,16 +120,6 @@ struct UserProfileView: View {
             .padding(.horizontal, 24)
             .navigationTitle(user.firstName)
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
-                        dismiss()
-                    }
-                    .foregroundColor(.orange)
-                }
-            }
-        }
         .onAppear {
             checkFollowStatus()
         }
