@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BrowseVideosView: View {
     @State private var videos: [WaffleVideo] = []
+    @State private var showingFriends = false
     
     var body: some View {
         NavigationView {
@@ -44,7 +45,13 @@ struct BrowseVideosView: View {
                         
                         // Quick stats
                         HStack(spacing: 20) {
-                            StatCard(title: "Friends", value: "12", icon: "person.2.fill")
+                            Button(action: {
+                                showingFriends = true
+                            }) {
+                                StatCard(title: "Friends", value: "12", icon: "person.2.fill")
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
                             StatCard(title: "Videos", value: "8", icon: "video.fill")
                             StatCard(title: "Watched", value: "5", icon: "eye.fill")
                         }
@@ -65,6 +72,9 @@ struct BrowseVideosView: View {
             .navigationBarHidden(true)
             .onAppear {
                 loadVideos()
+            }
+            .fullScreenCover(isPresented: $showingFriends) {
+                FriendsView()
             }
         }
     }
