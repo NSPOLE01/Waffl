@@ -11,9 +11,9 @@
 		91F0EA272E2872CC0056D3AA /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA262E2872CC0056D3AA /* FirebaseCore */; };
 		91F0EA292E2872CC0056D3AA /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA282E2872CC0056D3AA /* FirebaseDatabase */; };
 		91F0EA2B2E2872CC0056D3AA /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA2A2E2872CC0056D3AA /* FirebaseFirestore */; };
-		91F0EA2C2E2872CC0056D3AA /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA2C2E2872CC0056D3BB /* FirebaseStorage */; };
 		91F0EA322E28760D0056D3AA /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA312E28760D0056D3AA /* GoogleSignIn */; };
 		91F0EA342E28760D0056D3AA /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA332E28760D0056D3AA /* GoogleSignInSwift */; };
+		91F0EB872E3AF7240056D3AA /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA2C2E2872CC0056D3BB /* FirebaseStorage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +57,7 @@
 				Views/CreateVideoView.swift,
 				Views/CustomStyles.swift,
 				Views/EditProfileView.swift,
+				Views/FriendsView.swift,
 				Views/HomeScreenView.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
@@ -85,6 +86,7 @@
 				Views/CreateVideoView.swift,
 				Views/CustomStyles.swift,
 				Views/EditProfileView.swift,
+				Views/FriendsView.swift,
 				Views/HomeScreenView.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
@@ -125,6 +127,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91F0EB872E3AF7240056D3AA /* FirebaseStorage in Frameworks */,
 				91F0EA322E28760D0056D3AA /* GoogleSignIn in Frameworks */,
 				91F0EA292E2872CC0056D3AA /* FirebaseDatabase in Frameworks */,
 				91F0EA2B2E2872CC0056D3AA /* FirebaseFirestore in Frameworks */,

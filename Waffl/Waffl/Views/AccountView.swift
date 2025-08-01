@@ -11,6 +11,7 @@ struct AccountView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
+    @State private var showingFriends = false
     
     var body: some View {
         NavigationView {
@@ -58,14 +59,19 @@ struct AccountView: View {
                 
                 // Stats
                 HStack(spacing: 40) {
-                    VStack(spacing: 8) {
-                        Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Friends")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                    Button(action: {
+                        showingFriends = true
+                    }) {
+                        VStack(spacing: 8) {
+                            Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Friends")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     VStack(spacing: 8) {
                         Text("\(authManager.currentUserProfile?.videosUploaded ?? 0)")
@@ -95,7 +101,7 @@ struct AccountView: View {
                     }
                     
                     AccountMenuButton(title: "Friends", icon: "person.2") {
-                        // TODO: Navigate to friends list
+                        showingFriends = true
                     }
                     
                     AccountMenuButton(title: "Settings", icon: "gear") {
@@ -144,6 +150,9 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingEditProfile) {
                 EditProfileView()
+            }
+            .fullScreenCover(isPresented: $showingFriends) {
+                FriendsView()
             }
         }
     }
