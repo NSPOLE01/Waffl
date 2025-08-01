@@ -18,7 +18,7 @@ struct BrowseVideosView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             VStack(alignment: .leading) {
-                                Text("Waffle Wednesday")
+                                Text("Waffl Wednesday")
                                     .font(.system(size: 28, weight: .bold))
                                     .foregroundColor(.primary)
                                 
