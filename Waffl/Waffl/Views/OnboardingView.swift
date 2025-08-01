@@ -40,7 +40,7 @@ struct OnboardingView: View {
                     VStack(spacing: 20) {
                         AppLogoView()
                         
-                        Text("Waffle Wednesday")
+                        Text("Waffl Wednesday")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
                             .foregroundColor(Color.primary)
                     }
