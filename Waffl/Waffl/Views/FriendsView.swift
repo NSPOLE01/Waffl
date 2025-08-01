@@ -60,6 +60,8 @@ struct FriendsView: View {
     @State private var searchText = ""
     @State private var showingConfirmation = false
     @State private var confirmationAction: ConfirmationAction?
+    @State private var selectedUser: WaffleUser?
+    @State private var showingUserProfile = false
     
     var body: some View {
         NavigationView {
@@ -92,7 +94,10 @@ struct FriendsView: View {
                         } else {
                             LazyVStack(spacing: 12) {
                                 ForEach(followingFriends) { friend in
-                                    FriendRowView(user: friend, isFollowing: true) {
+                                    FriendRowView(user: friend, isFollowing: true, onTap: {
+                                        selectedUser = friend
+                                        showingUserProfile = true
+                                    }) {
                                         confirmationAction = .unfollow(friend)
                                         showingConfirmation = true
                                     }
@@ -144,7 +149,10 @@ struct FriendsView: View {
                         } else {
                             LazyVStack(spacing: 12) {
                                 ForEach(filteredDiscoverUsers) { user in
-                                    FriendRowView(user: user, isFollowing: false) {
+                                    FriendRowView(user: user, isFollowing: false, onTap: {
+                                        selectedUser = user
+                                        showingUserProfile = true
+                                    }) {
                                         confirmationAction = .follow(user)
                                         showingConfirmation = true
                                     }
@@ -177,6 +185,11 @@ struct FriendsView: View {
         .overlay(
             confirmationModalOverlay
         )
+        .fullScreenCover(isPresented: $showingUserProfile) {
+            if let selectedUser = selectedUser {
+                UserProfileView(user: selectedUser)
+            }
+        }
     }
     
     var filteredDiscoverUsers: [WaffleUser] {
@@ -519,6 +532,7 @@ struct FriendsView: View {
 struct FriendRowView: View {
     let user: WaffleUser
     let isFollowing: Bool
+    let onTap: () -> Void
     let onAction: () -> Void
     
     var body: some View {
@@ -574,6 +588,9 @@ struct FriendRowView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .onTapGesture {
+            onTap()
+        }
     }
 }
 
