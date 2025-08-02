@@ -10,44 +10,6 @@ import Firebase
 import FirebaseAuth
 import FirebaseFirestore
 
-enum ConfirmationAction {
-    case follow(WaffleUser)
-    case unfollow(WaffleUser)
-    
-    var title: String {
-        switch self {
-        case .follow(let user):
-            return "Follow \(user.firstName)?"
-        case .unfollow(let user):
-            return "Unfollow \(user.firstName)?"
-        }
-    }
-    
-    var message: String {
-        switch self {
-        case .follow(let user):
-            return "Do you want to follow \(user.displayName)?"
-        case .unfollow(let user):
-            return "Do you want to unfollow \(user.displayName)? You can always follow them again later."
-        }
-    }
-    
-    var actionText: String {
-        switch self {
-        case .follow:
-            return "Follow"
-        case .unfollow:
-            return "Unfollow"
-        }
-    }
-    
-    var user: WaffleUser {
-        switch self {
-        case .follow(let user), .unfollow(let user):
-            return user
-        }
-    }
-}
 
 struct FriendsView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -58,129 +20,122 @@ struct FriendsView: View {
     @State private var isLoadingFollowing = true
     @State private var isLoadingDiscover = true
     @State private var searchText = ""
-    @State private var showingConfirmation = false
-    @State private var confirmationAction: ConfirmationAction?
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Following Friends Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Following")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text("\(followingFriends.count)")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        if isLoadingFollowing {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Spacer()
-                            }
-                            .padding(.vertical, 20)
-                        } else if followingFriends.isEmpty {
-                            EmptyFriendsView()
-                        } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(followingFriends) { friend in
-                                    FriendRowView(user: friend, isFollowing: true, onTap: {
-                                        // This will be handled by NavigationLink inside FriendRowView
-                                    }) {
-                                        confirmationAction = .unfollow(friend)
-                                        showingConfirmation = true
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Following Friends Section
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Text("Following")
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(followingFriends.count)")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                if isLoadingFollowing {
+                                    HStack {
+                                        Spacer()
+                                        ProgressView()
+                                            .scaleEffect(1.2)
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, 20)
+                                } else if followingFriends.isEmpty {
+                                    EmptyFriendsView()
+                                } else {
+                                    LazyVStack(spacing: 12) {
+                                        ForEach(followingFriends) { friend in
+                                            FriendRowView(user: friend, isFollowing: true, onTap: {
+                                                // This will be handled by NavigationLink inside FriendRowView
+                                            }) {
+                                                unfollowUser(friend)
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
-                    
-                    Divider()
-                        .padding(.vertical, 8)
-                    
-                    // Discover Friends Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Discover Friends")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.primary)
                             
-                            Spacer()
+                            Divider()
+                                .padding(.vertical, 8)
                             
-                            Button(action: refreshDiscoverUsers) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.orange)
-                            }
-                        }
-                        
-                        // Search Bar
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.secondary)
-                            
-                            TextField("Search users...", text: $searchText)
-                                .textFieldStyle(PlainTextFieldStyle())
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color(UIColor.systemGray6))
-                        .cornerRadius(10)
-                        
-                        if isLoadingDiscover {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Spacer()
-                            }
-                            .padding(.vertical, 20)
-                        } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(filteredDiscoverUsers) { user in
-                                    FriendRowView(user: user, isFollowing: false, onTap: {
-                                        // This will be handled by NavigationLink inside FriendRowView
-                                    }) {
-                                        confirmationAction = .follow(user)
-                                        showingConfirmation = true
+                            // Discover Friends Section
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Text("Discover Friends")
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: refreshDiscoverUsers) {
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.orange)
+                                    }
+                                }
+                                
+                                // Search Bar
+                                HStack {
+                                    Image(systemName: "magnifyingglass")
+                                        .foregroundColor(.secondary)
+                                    
+                                    TextField("Search users...", text: $searchText)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(Color(UIColor.systemGray6))
+                                .cornerRadius(10)
+                                
+                                if isLoadingDiscover {
+                                    HStack {
+                                        Spacer()
+                                        ProgressView()
+                                            .scaleEffect(1.2)
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, 20)
+                                } else {
+                                    LazyVStack(spacing: 12) {
+                                        ForEach(filteredDiscoverUsers) { user in
+                                            FriendRowView(user: user, isFollowing: false, onTap: {
+                                                // This will be handled by NavigationLink inside FriendRowView
+                                            }) {
+                                                followUser(user)
+                                            }
+                                        }
                                     }
                                 }
                             }
+                            
+                            Spacer(minLength: 20)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+                    }
+                    .navigationTitle("Friends")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarBackButtonHidden(true)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Back") {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                            .foregroundColor(.orange)
                         }
                     }
-                    
-                    Spacer(minLength: 20)
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-            }
-            .navigationTitle("Friends")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .foregroundColor(.orange)
-                }
-            }
         }
         .onAppear {
             loadFollowingFriends()
             loadDiscoverUsers()
         }
-        .overlay(
-            confirmationModalOverlay
-        )
     }
     
     var filteredDiscoverUsers: [WaffleUser] {
@@ -196,134 +151,7 @@ struct FriendsView: View {
         }
     }
     
-    @ViewBuilder
-    private var confirmationModalOverlay: some View {
-        if showingConfirmation, let action = confirmationAction {
-            ZStack {
-                // Background overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showingConfirmation = false
-                        confirmationAction = nil
-                    }
-                
-                // Modal content
-                VStack(spacing: 0) {
-                    // Header with title and close button
-                    HStack {
-                        Text(action.title)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 16)
-                    
-                    // User info
-                    HStack(spacing: 12) {
-                        AsyncImage(url: URL(string: action.user.profileImageURL)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipShape(Circle())
-                        } placeholder: {
-                            Circle()
-                                .fill(Color.orange.opacity(0.1))
-                                .frame(width: 50, height: 50)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.orange)
-                                )
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(action.user.displayName)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Text(action.user.email)
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-                    
-                    // Message
-                    Text(action.message)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
-                    
-                    // Action buttons
-                    HStack(spacing: 12) {
-                        // Cancel button
-                        Button(action: {
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Text("Cancel")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color(UIColor.systemGray6))
-                                .cornerRadius(12)
-                        }
-                        
-                        // Confirm action button
-                        Button(action: {
-                            performConfirmationAction(action)
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Text(action.actionText)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.orange)
-                                .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
-                .padding(.horizontal, 32)
-            }
-            .animation(.easeInOut(duration: 0.3), value: showingConfirmation)
-        }
-    }
     
-    private func performConfirmationAction(_ action: ConfirmationAction) {
-        switch action {
-        case .follow(let user):
-            followUser(user)
-        case .unfollow(let user):
-            unfollowUser(user)
-        }
-    }
     
     // MARK: - Data Loading
     

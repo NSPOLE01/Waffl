@@ -10,95 +10,131 @@ import Firebase
 import FirebaseAuth
 import FirebaseFirestore
 
+enum ConfirmationAction {
+    case follow(WaffleUser)
+    case unfollow(WaffleUser)
+    
+    var title: String {
+        switch self {
+        case .follow(let user):
+            return "Follow \(user.firstName)?"
+        case .unfollow(let user):
+            return "Unfollow \(user.firstName)?"
+        }
+    }
+    
+    var message: String {
+        switch self {
+        case .follow(let user):
+            return "Do you want to follow \(user.displayName)?"
+        case .unfollow(let user):
+            return "Do you want to unfollow \(user.displayName)? You can always follow them again later."
+        }
+    }
+    
+    var actionText: String {
+        switch self {
+        case .follow:
+            return "Follow"
+        case .unfollow:
+            return "Unfollow"
+        }
+    }
+    
+    var user: WaffleUser {
+        switch self {
+        case .follow(let user), .unfollow(let user):
+            return user
+        }
+    }
+}
+
 struct UserFriendsView: View {
     let user: WaffleUser
     @EnvironmentObject var authManager: AuthManager
     
     @State private var userFriends: [WaffleUser] = []
     @State private var isLoadingFriends = true
-    @State private var showingConfirmation = false
-    @State private var confirmationAction: ConfirmationAction?
     @State private var myFollowingStatus: [String: Bool] = [:]
     @State private var isFollowingThisUser = false
     @State private var isCheckingFollowStatus = true
     
     var body: some View {
         VStack(spacing: 20) {
-            if isCheckingFollowStatus {
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Loading...")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 40)
-            } else if !isFollowingThisUser {
-                // Restricted access view
-                VStack(spacing: 20) {
-                    Image(systemName: "lock.circle")
-                        .font(.system(size: 60))
-                        .foregroundColor(.orange)
-                    
-                    VStack(spacing: 8) {
-                        Text("Friends List Private")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Text("Follow \(user.firstName) to see who they're following")
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(.top, 60)
-            } else if isLoadingFriends {
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Loading \(user.firstName)'s friends...")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 40)
-            } else if userFriends.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "person.2.slash")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    
-                    Text("\(user.firstName) has no friends yet")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Text("When they follow people, you'll see them here")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, 40)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(userFriends) { friend in
-                            UserFriendRowView(
-                                user: friend,
-                                isFollowing: myFollowingStatus[friend.uid] ?? false
-                            ) {
-                                if myFollowingStatus[friend.uid] == true {
-                                    confirmationAction = .unfollow(friend)
-                                } else {
-                                    confirmationAction = .follow(friend)
-                                }
-                                showingConfirmation = true
+                    if isCheckingFollowStatus {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Loading...")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 40)
+                    } else if !isFollowingThisUser {
+                        // Restricted access view
+                        VStack(spacing: 20) {
+                            Image(systemName: "lock.circle")
+                                .font(.system(size: 60))
+                                .foregroundColor(.orange)
+                            
+                            VStack(spacing: 8) {
+                                Text("Friends List Private")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Text("Follow \(user.firstName) to see who they're following")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
                             }
                         }
+                        .padding(.top, 60)
+                    } else if isLoadingFriends {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Loading \(user.firstName)'s friends...")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 40)
+                    } else if userFriends.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.2.slash")
+                                .font(.system(size: 48))
+                                .foregroundColor(.secondary)
+                            
+                            Text("\(user.firstName) has no friends yet")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            Text("When they follow people, you'll see them here")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.top, 40)
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(userFriends) { friend in
+                                    UserFriendRowView(
+                                        user: friend,
+                                        isFollowing: myFollowingStatus[friend.uid] ?? false
+                                    ) {
+                                        if myFollowingStatus[friend.uid] == true {
+                                            unfollowUser(friend)
+                                        } else {
+                                            followUser(friend)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
+                        }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-                }
-            }
-            
+                    
             Spacer()
         }
         .navigationTitle("\(user.firstName)'s Friends")
@@ -106,130 +142,8 @@ struct UserFriendsView: View {
         .onAppear {
             checkIfFollowingUser()
         }
-        .overlay(
-            confirmationModalOverlay
-        )
     }
     
-    @ViewBuilder
-    private var confirmationModalOverlay: some View {
-        if showingConfirmation, let action = confirmationAction {
-            ZStack {
-                // Background overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showingConfirmation = false
-                        confirmationAction = nil
-                    }
-                
-                // Modal content
-                VStack(spacing: 0) {
-                    // Header with title and close button
-                    HStack {
-                        Text(action.title)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 16)
-                    
-                    // User info
-                    HStack(spacing: 12) {
-                        AsyncImage(url: URL(string: action.user.profileImageURL)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipShape(Circle())
-                        } placeholder: {
-                            Circle()
-                                .fill(Color.orange.opacity(0.1))
-                                .frame(width: 50, height: 50)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.orange)
-                                )
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(action.user.displayName)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Text(action.user.email)
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-                    
-                    // Message
-                    Text(action.message)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
-                    
-                    // Action buttons
-                    HStack(spacing: 12) {
-                        // Cancel button
-                        Button(action: {
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Text("Cancel")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color(UIColor.systemGray6))
-                                .cornerRadius(12)
-                        }
-                        
-                        // Confirm action button
-                        Button(action: {
-                            performConfirmationAction(action)
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Text(action.actionText)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.orange)
-                                .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
-                .padding(.horizontal, 32)
-            }
-            .animation(.easeInOut(duration: 0.3), value: showingConfirmation)
-        }
-    }
     
     private func checkIfFollowingUser() {
         guard let currentUserId = authManager.currentUser?.uid else { 
@@ -344,14 +258,6 @@ struct UserFriendsView: View {
         }
     }
     
-    private func performConfirmationAction(_ action: ConfirmationAction) {
-        switch action {
-        case .follow(let user):
-            followUser(user)
-        case .unfollow(let user):
-            unfollowUser(user)
-        }
-    }
     
     private func followUser(_ user: WaffleUser) {
         guard let currentUserId = authManager.currentUser?.uid else { return }
