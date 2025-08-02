@@ -6,11 +6,18 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseFirestore
+import FirebaseStorage
 
 struct CreateVideoView: View {
+    @EnvironmentObject var authManager: AuthManager
     @State private var isRecording = false
     @State private var recordedVideoURL: URL?
     @State private var showingCamera = false
+    @State private var isUploading = false
+    @State private var uploadProgress: Double = 0.0
+    @State private var showingSuccessMessage = false
     
     var body: some View {
         NavigationView {
@@ -78,28 +85,61 @@ struct CreateVideoView: View {
                         }
                     } else {
                         VStack(spacing: 12) {
-                            Button(action: {
-                                // TODO: Upload video to Firebase
-                                uploadVideo()
-                            }) {
-                                HStack {
-                                    Image(systemName: "icloud.and.arrow.up")
-                                    Text("Share Video")
-                                        .font(.system(size: 18, weight: .semibold))
+                            if isUploading {
+                                VStack(spacing: 8) {
+                                    ProgressView(value: uploadProgress)
+                                        .progressViewStyle(LinearProgressViewStyle(tint: .orange))
+                                    
+                                    Text("Uploading... \(Int(uploadProgress * 100))%")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.secondary)
                                 }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 54)
-                                .background(Color.orange)
-                                .cornerRadius(12)
+                                .padding(.horizontal, 16)
+                            } else if showingSuccessMessage {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(.green)
+                                    
+                                    Text("Video uploaded successfully!")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.green)
+                                }
+                            } else {
+                                Button(action: {
+                                    uploadVideo()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "icloud.and.arrow.up")
+                                        Text("Share Video")
+                                            .font(.system(size: 18, weight: .semibold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 54)
+                                    .background(Color.orange)
+                                    .cornerRadius(12)
+                                }
                             }
                             
-                            Button(action: {
-                                recordedVideoURL = nil
-                            }) {
-                                Text("Record Again")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.orange)
+                            if !isUploading && !showingSuccessMessage {
+                                Button(action: {
+                                    recordedVideoURL = nil
+                                    showingSuccessMessage = false
+                                }) {
+                                    Text("Record Again")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.orange)
+                                }
+                            } else if showingSuccessMessage {
+                                Button(action: {
+                                    recordedVideoURL = nil
+                                    showingSuccessMessage = false
+                                }) {
+                                    Text("Record New Video")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.orange)
+                                }
                             }
                         }
                     }
@@ -115,7 +155,129 @@ struct CreateVideoView: View {
     }
     
     private func uploadVideo() {
-        // TODO: Implement video upload to Firebase
-        print("Uploading video...")
+        guard let videoURL = recordedVideoURL,
+              let currentUser = authManager.currentUser else {
+            print("❌ No video or user found")
+            return
+        }
+        
+        isUploading = true
+        uploadProgress = 0.0
+        
+        let storage = Storage.storage()
+        let storageRef = storage.reference()
+        
+        // Create unique filename
+        let videoId = UUID().uuidString
+        let videoRef = storageRef.child("videos/\(currentUser.uid)/\(videoId).mov")
+        
+        // Get video duration
+        let videoDuration = getVideoDuration(from: videoURL)
+        
+        // Upload video file
+        let uploadTask = videoRef.putFile(from: videoURL, metadata: nil) { metadata, error in
+            if let error = error {
+                print("❌ Error uploading video: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isUploading = false
+                }
+                return
+            }
+            
+            // Get download URL
+            videoRef.downloadURL { url, error in
+                if let error = error {
+                    print("❌ Error getting download URL: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.isUploading = false
+                    }
+                    return
+                }
+                
+                guard let downloadURL = url else {
+                    print("❌ No download URL")
+                    DispatchQueue.main.async {
+                        self.isUploading = false
+                    }
+                    return
+                }
+                
+                // Save video metadata to Firestore
+                self.saveVideoToFirestore(
+                    videoId: videoId,
+                    videoURL: downloadURL.absoluteString,
+                    duration: videoDuration,
+                    authorId: currentUser.uid
+                )
+            }
+        }
+        
+        // Monitor upload progress
+        uploadTask.observe(.progress) { snapshot in
+            let percentComplete = Double(snapshot.progress!.completedUnitCount) / Double(snapshot.progress!.totalUnitCount)
+            DispatchQueue.main.async {
+                self.uploadProgress = percentComplete
+            }
+        }
+    }
+    
+    private func saveVideoToFirestore(videoId: String, videoURL: String, duration: Int, authorId: String) {
+        guard let currentUserProfile = authManager.currentUserProfile else {
+            print("❌ No current user profile")
+            DispatchQueue.main.async {
+                self.isUploading = false
+            }
+            return
+        }
+        
+        let db = Firestore.firestore()
+        
+        let video = WaffleVideo(
+            id: videoId,
+            authorId: authorId,
+            authorName: currentUserProfile.displayName,
+            authorAvatar: currentUserProfile.profileImageURL.isEmpty ? "person.circle.fill" : currentUserProfile.profileImageURL,
+            videoURL: videoURL,
+            duration: duration
+        )
+        
+        db.collection("videos").document(videoId).setData(video.toDictionary()) { error in
+            DispatchQueue.main.async {
+                self.isUploading = false
+                
+                if let error = error {
+                    print("❌ Error saving video to Firestore: \(error.localizedDescription)")
+                } else {
+                    print("✅ Video saved successfully!")
+                    self.showingSuccessMessage = true
+                    
+                    // Update user's video count
+                    self.updateUserVideoCount()
+                }
+            }
+        }
+    }
+    
+    private func updateUserVideoCount() {
+        guard let currentUser = authManager.currentUser else { return }
+        
+        let db = Firestore.firestore()
+        db.collection("users").document(currentUser.uid).updateData([
+            "videosUploaded": FieldValue.increment(Int64(1))
+        ]) { error in
+            if let error = error {
+                print("❌ Error updating video count: \(error.localizedDescription)")
+            } else {
+                print("✅ User video count updated")
+                // Refresh user profile
+                self.authManager.refreshUserProfile()
+            }
+        }
+    }
+    
+    private func getVideoDuration(from url: URL) -> Int {
+        // This is a simple placeholder - in a real app you'd use AVFoundation to get the actual duration
+        // For now, assuming all videos are around 60 seconds as per the app concept
+        return 60
     }
 }

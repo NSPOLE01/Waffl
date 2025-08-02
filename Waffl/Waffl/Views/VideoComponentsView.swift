@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseFirestore
 
 // MARK: - Video Card Component
 struct VideoCard: View {
@@ -41,7 +43,7 @@ struct VideoCard: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                     
-                    Text(video.uploadDate, style: .relative)
+                    Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
@@ -113,12 +115,69 @@ struct StatCard: View {
 }
 
 // MARK: - Video Model
-struct WaffleVideo: Identifiable {
+struct WaffleVideo: Identifiable, Codable {
     let id: String
+    let authorId: String
     let authorName: String
     let authorAvatar: String
+    let videoURL: String
     let thumbnailURL: String?
     let duration: Int
     let uploadDate: Date
     let isWatched: Bool
+    
+    // Initialize from Firestore document
+    init(from document: DocumentSnapshot) throws {
+        let data = document.data()
+        
+        guard let authorId = data?["authorId"] as? String,
+              let authorName = data?["authorName"] as? String,
+              let videoURL = data?["videoURL"] as? String,
+              let duration = data?["duration"] as? Int,
+              let uploadDateTimestamp = data?["uploadDate"] as? Timestamp else {
+            throw NSError(domain: "VideoModelError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid video data"])
+        }
+        
+        self.id = document.documentID
+        self.authorId = authorId
+        self.authorName = authorName
+        self.authorAvatar = data?["authorAvatar"] as? String ?? "person.circle.fill"
+        self.videoURL = videoURL
+        self.thumbnailURL = data?["thumbnailURL"] as? String
+        self.duration = duration
+        self.uploadDate = uploadDateTimestamp.dateValue()
+        self.isWatched = data?["isWatched"] as? Bool ?? false
+    }
+    
+    // Initialize with parameters (for creating new videos)
+    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false) {
+        self.id = id
+        self.authorId = authorId
+        self.authorName = authorName
+        self.authorAvatar = authorAvatar
+        self.videoURL = videoURL
+        self.thumbnailURL = thumbnailURL
+        self.duration = duration
+        self.uploadDate = uploadDate
+        self.isWatched = isWatched
+    }
+    
+    // Convert to dictionary for Firestore
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "authorId": authorId,
+            "authorName": authorName,
+            "authorAvatar": authorAvatar,
+            "videoURL": videoURL,
+            "duration": duration,
+            "uploadDate": Timestamp(date: uploadDate),
+            "isWatched": isWatched
+        ]
+        
+        if let thumbnailURL = thumbnailURL {
+            dict["thumbnailURL"] = thumbnailURL
+        }
+        
+        return dict
+    }
 }
