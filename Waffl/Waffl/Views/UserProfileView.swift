@@ -16,8 +16,6 @@ struct UserProfileView: View {
     
     @State private var isFollowing = false
     @State private var isLoadingFollowStatus = true
-    @State private var showingConfirmation = false
-    @State private var confirmationAction: ConfirmationAction?
     
     var body: some View {
         VStack(spacing: 30) {
@@ -95,11 +93,10 @@ struct UserProfileView: View {
                 } else {
                     Button(action: {
                         if isFollowing {
-                            confirmationAction = .unfollow(user)
+                            unfollowUser(user)
                         } else {
-                            confirmationAction = .follow(user)
+                            followUser(user)
                         }
-                        showingConfirmation = true
                     }) {
                         Text(isFollowing ? "Following" : "Follow")
                             .font(.system(size: 16, weight: .semibold))
@@ -123,130 +120,8 @@ struct UserProfileView: View {
         .onAppear {
             checkFollowStatus()
         }
-        .overlay(
-            confirmationModalOverlay
-        )
     }
     
-    @ViewBuilder
-    private var confirmationModalOverlay: some View {
-        if showingConfirmation, let action = confirmationAction {
-            ZStack {
-                // Background overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showingConfirmation = false
-                        confirmationAction = nil
-                    }
-                
-                // Modal content
-                VStack(spacing: 0) {
-                    // Header with title and close button
-                    HStack {
-                        Text(action.title)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 16)
-                    
-                    // User info
-                    HStack(spacing: 12) {
-                        AsyncImage(url: URL(string: action.user.profileImageURL)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipShape(Circle())
-                        } placeholder: {
-                            Circle()
-                                .fill(Color.orange.opacity(0.1))
-                                .frame(width: 50, height: 50)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.orange)
-                                )
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(action.user.displayName)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Text(action.user.email)
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-                    
-                    // Message
-                    Text(action.message)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
-                    
-                    // Action buttons
-                    HStack(spacing: 12) {
-                        // Cancel button
-                        Button(action: {
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Text("Cancel")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color(UIColor.systemGray6))
-                                .cornerRadius(12)
-                        }
-                        
-                        // Confirm action button
-                        Button(action: {
-                            performConfirmationAction(action)
-                            showingConfirmation = false
-                            confirmationAction = nil
-                        }) {
-                            Text(action.actionText)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.orange)
-                                .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
-                .padding(.horizontal, 32)
-            }
-            .animation(.easeInOut(duration: 0.3), value: showingConfirmation)
-        }
-    }
     
     private func checkFollowStatus() {
         guard let currentUserId = authManager.currentUser?.uid else { 
@@ -270,14 +145,6 @@ struct UserProfileView: View {
         }
     }
     
-    private func performConfirmationAction(_ action: ConfirmationAction) {
-        switch action {
-        case .follow(let user):
-            followUser(user)
-        case .unfollow(let user):
-            unfollowUser(user)
-        }
-    }
     
     private func followUser(_ user: WaffleUser) {
         guard let currentUserId = authManager.currentUser?.uid else { return }
