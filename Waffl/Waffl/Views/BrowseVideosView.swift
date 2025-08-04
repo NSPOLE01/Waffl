@@ -115,13 +115,16 @@ struct BrowseVideosView: View {
                 return
             }
             
-            var followingIds = snapshot?.documents.compactMap { $0.documentID } ?? []
-            // Include current user's own videos
-            followingIds.append(currentUserId)
+            let followingIds = snapshot?.documents.compactMap { $0.documentID } ?? []
+            // Don't include current user's own videos in browse view
             
-            // If user has no friends, just show their own videos
+            // If user has no friends, show empty state
             if followingIds.isEmpty {
-                followingIds = [currentUserId]
+                DispatchQueue.main.async {
+                    self.isLoadingVideos = false
+                    self.videos = []
+                }
+                return
             }
             
             // Now get videos from these users
