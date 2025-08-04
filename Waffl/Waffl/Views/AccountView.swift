@@ -9,10 +9,10 @@ import SwiftUI
 
 struct AccountView: View {
     @EnvironmentObject var authManager: AuthManager
+    @Binding var selectedTab: Int
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
     @State private var showingFriends = false
-    @State private var showingMyWaffls = false
     
     var body: some View {
         NavigationView {
@@ -75,7 +75,7 @@ struct AccountView: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Button(action: {
-                        showingMyWaffls = true
+                        selectedTab = 3 // Switch to MyWaffls tab
                     }) {
                         VStack(spacing: 8) {
                             Text("\(authManager.currentUserProfile?.videosUploaded ?? 0)")
@@ -159,9 +159,6 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingFriends) {
                 FriendsView()
-            }
-            .fullScreenCover(isPresented: $showingMyWaffls) {
-                MyWafflsView()
             }
         }
     }

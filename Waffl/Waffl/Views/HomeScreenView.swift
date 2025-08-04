@@ -37,7 +37,7 @@ struct HomeScreenView: View {
                 .tag(3)
             
             // Account Tab
-            AccountView()
+            AccountView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "person.circle.fill")
                     Text("Account")
