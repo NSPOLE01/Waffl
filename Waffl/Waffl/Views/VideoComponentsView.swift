@@ -34,9 +34,7 @@ struct VideoCard: View {
             
             // Video info
             HStack {
-                Image(systemName: video.authorAvatar)
-                    .font(.system(size: 24))
-                    .foregroundColor(.orange)
+                AuthorAvatarView(avatarString: video.authorAvatar)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(video.authorName)
@@ -179,5 +177,34 @@ struct WaffleVideo: Identifiable, Codable {
         }
         
         return dict
+    }
+}
+
+// MARK: - Author Avatar View
+struct AuthorAvatarView: View {
+    let avatarString: String
+    
+    var body: some View {
+        Group {
+            if avatarString.hasPrefix("http") {
+                // It's a URL - use AsyncImage
+                AsyncImage(url: URL(string: avatarString)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.orange)
+                }
+                .frame(width: 24, height: 24)
+                .clipShape(Circle())
+            } else {
+                // It's a system icon name
+                Image(systemName: avatarString)
+                    .font(.system(size: 24))
+                    .foregroundColor(.orange)
+            }
+        }
     }
 }
