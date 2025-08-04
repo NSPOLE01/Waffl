@@ -9,6 +9,7 @@ import SwiftUI
 import Firebase
 import FirebaseFirestore
 import FirebaseStorage
+import AVFoundation
 
 struct CreateVideoView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -276,8 +277,9 @@ struct CreateVideoView: View {
     }
     
     private func getVideoDuration(from url: URL) -> Int {
-        // This is a simple placeholder - in a real app you'd use AVFoundation to get the actual duration
-        // For now, assuming all videos are around 60 seconds as per the app concept
-        return 60
+        let asset = AVAsset(url: url)
+        let duration = asset.duration
+        let seconds = CMTimeGetSeconds(duration)
+        return Int(seconds.rounded())
     }
 }

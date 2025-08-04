@@ -28,13 +28,21 @@ struct HomeScreenView: View {
                 }
                 .tag(2)
             
+            // My Waffls Tab
+            MyWafflsView()
+                .tabItem {
+                    Image(systemName: "person.crop.rectangle.stack")
+                    Text("My Waffls")
+                }
+                .tag(3)
+            
             // Account Tab
             AccountView()
                 .tabItem {
                     Image(systemName: "person.circle.fill")
                     Text("Account")
                 }
-                .tag(3)
+                .tag(4)
         }
         .accentColor(.orange)
         .navigationBarHidden(true)

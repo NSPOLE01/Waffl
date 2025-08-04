@@ -59,6 +59,7 @@
 				Views/EditProfileView.swift,
 				Views/FriendsView.swift,
 				Views/HomeScreenView.swift,
+				Views/MyWafflsView.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
 				Views/SignInView.swift,

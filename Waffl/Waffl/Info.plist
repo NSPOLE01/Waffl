@@ -15,5 +15,9 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Waffl needs access to your camera to record videos for your weekly moments.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Waffl needs access to your microphone to record audio with your videos.</string>
 </dict>
 </plist>
