@@ -12,6 +12,7 @@ struct AccountView: View {
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
     @State private var showingFriends = false
+    @State private var showingMyWaffls = false
     
     var body: some View {
         NavigationView {
@@ -73,14 +74,19 @@ struct AccountView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    VStack(spacing: 8) {
-                        Text("\(authManager.currentUserProfile?.videosUploaded ?? 0)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Videos")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                    Button(action: {
+                        showingMyWaffls = true
+                    }) {
+                        VStack(spacing: 8) {
+                            Text("\(authManager.currentUserProfile?.videosUploaded ?? 0)")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Videos")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     VStack(spacing: 8) {
                         Text("\(authManager.currentUserProfile?.weeksParticipated ?? 0)")
@@ -153,6 +159,9 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingFriends) {
                 FriendsView()
+            }
+            .fullScreenCover(isPresented: $showingMyWaffls) {
+                MyWafflsView()
             }
         }
     }
