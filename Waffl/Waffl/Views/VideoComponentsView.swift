@@ -194,15 +194,15 @@ struct AuthorAvatarView: View {
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Image(systemName: "person.circle.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 32))
                         .foregroundColor(.orange)
                 }
-                .frame(width: 24, height: 24)
+                .frame(width: 32, height: 32)
                 .clipShape(Circle())
             } else {
                 // It's a system icon name
                 Image(systemName: avatarString)
-                    .font(.system(size: 24))
+                    .font(.system(size: 32))
                     .foregroundColor(.orange)
             }
         }

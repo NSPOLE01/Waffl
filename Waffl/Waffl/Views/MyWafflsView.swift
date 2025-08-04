@@ -115,6 +115,7 @@ struct MyWafflsView: View {
         // Get only videos uploaded by the current user
         db.collection("videos")
             .whereField("authorId", isEqualTo: currentUserId)
+            .order(by: "uploadDate", descending: true)
             .getDocuments { snapshot, error in
                 DispatchQueue.main.async {
                     self.isLoadingVideos = false
@@ -144,8 +145,8 @@ struct MyWafflsView: View {
                         }
                     }
                     
-                    // Sort by upload date (newest first) on the client side
-                    self.videos = loadedVideos.sorted { $0.uploadDate > $1.uploadDate }
+                    // Videos are already sorted by the server-side query
+                    self.videos = loadedVideos
                     print("✅ Final result: Loaded \(loadedVideos.count) videos for current user")
                 }
             }
