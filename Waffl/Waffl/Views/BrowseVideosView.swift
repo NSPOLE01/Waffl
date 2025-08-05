@@ -56,7 +56,7 @@ struct BrowseVideosView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            StatCard(title: "Videos", value: "8", icon: "video.fill")
+                            StatCard(title: "Videos", value: "\(videos.count)", icon: "video.fill")
                             StatCard(title: "Watched", value: "5", icon: "eye.fill")
                         }
                         .padding(.horizontal, 20)
