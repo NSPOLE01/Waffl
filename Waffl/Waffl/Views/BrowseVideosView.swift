@@ -128,11 +128,11 @@ struct BrowseVideosView: View {
             }
             
             // Now get videos from these users
-            self.loadVideosFromUsers(userIds: followingIds)
+            self.loadVideosFromUsers(userIds: followingIds, currentUserId: currentUserId)
         }
     }
     
-    private func loadVideosFromUsers(userIds: [String]) {
+    private func loadVideosFromUsers(userIds: [String], currentUserId: String) {
         let db = Firestore.firestore()
         
         // Get videos from followed users (and current user)
@@ -156,7 +156,7 @@ struct BrowseVideosView: View {
                     }
                     
                     let loadedVideos = documents.compactMap { document in
-                        try? WaffleVideo(from: document)
+                        try? WaffleVideo(from: document, currentUserId: currentUserId)
                     }
                     
                     self.videos = loadedVideos

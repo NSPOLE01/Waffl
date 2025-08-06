@@ -136,7 +136,7 @@ struct MyWafflsView: View {
                     let loadedVideos = documents.compactMap { document in
                         print("🔍 Processing document: \(document.documentID)")
                         do {
-                            let video = try WaffleVideo(from: document)
+                            let video = try WaffleVideo(from: document, currentUserId: currentUserId)
                             print("✅ Successfully parsed video: \(video.id)")
                             return video
                         } catch {
