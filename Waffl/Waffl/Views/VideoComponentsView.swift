@@ -59,13 +59,13 @@ struct VideoCard: View {
                 Spacer()
                 
                 // Like section with separate buttons
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
                     // Heart button for liking
                     Button(action: {
                         toggleLike()
                     }) {
                         Image(systemName: isLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 18, weight: .medium))
+                            .font(.system(size: 20, weight: .medium))
                             .foregroundColor(isLiked ? .red : .gray)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -76,9 +76,8 @@ struct VideoCard: View {
                             showingLikesList = true
                         }) {
                             Text("\(likeCount)")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.secondary)
-                                .underline()
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
