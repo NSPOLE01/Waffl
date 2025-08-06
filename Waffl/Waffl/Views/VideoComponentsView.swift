@@ -72,8 +72,11 @@ struct VideoCard: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle())
             }
         }
         .padding(16)
