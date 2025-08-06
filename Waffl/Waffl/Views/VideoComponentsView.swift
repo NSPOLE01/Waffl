@@ -58,31 +58,33 @@ struct VideoCard: View {
                 
                 Spacer()
                 
-                // Like button
-                Button(action: {
-                    toggleLike()
-                }) {
-                    HStack(spacing: 4) {
+                // Like section with separate buttons
+                HStack(spacing: 4) {
+                    // Heart button for liking
+                    Button(action: {
+                        toggleLike()
+                    }) {
                         Image(systemName: isLiked ? "heart.fill" : "heart")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(isLiked ? .red : .gray)
-                        
-                        if likeCount > 0 {
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Like count button for showing who liked
+                    if likeCount > 0 {
+                        Button(action: {
+                            showingLikesList = true
+                        }) {
                             Text("\(likeCount)")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.secondary)
+                                .underline()
                         }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .contentShape(Rectangle())
-                .onLongPressGesture {
-                    if likeCount > 0 {
-                        showingLikesList = true
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
         }
         .padding(16)
