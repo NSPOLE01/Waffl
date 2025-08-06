@@ -14,6 +14,7 @@ struct VideoCard: View {
     let video: WaffleVideo
     @State private var isLiked: Bool
     @State private var likeCount: Int
+    @State private var showingLikesList = false
     @EnvironmentObject var authManager: AuthManager
     
     init(video: WaffleVideo) {
@@ -77,12 +78,20 @@ struct VideoCard: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .contentShape(Rectangle())
+                .onLongPressGesture {
+                    if likeCount > 0 {
+                        showingLikesList = true
+                    }
+                }
             }
         }
         .padding(16)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .sheet(isPresented: $showingLikesList) {
+            LikesListView(videoId: video.id)
+        }
     }
     
     private func toggleLike() {
@@ -178,6 +187,258 @@ struct EmptyVideosView: View {
             }
         }
         .padding(.vertical, 60)
+    }
+}
+
+// MARK: - Likes List View
+struct LikesListView: View {
+    let videoId: String
+    @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var authManager: AuthManager
+    @State private var likedUsers: [WaffleUser] = []
+    @State private var isLoading = true
+    @State private var followingStatuses: [String: Bool] = [:]
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                if isLoading {
+                    ProgressView("Loading likes...")
+                        .padding(.top, 40)
+                    Spacer()
+                } else if likedUsers.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "heart.slash")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                        Text("No likes yet")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 40)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(likedUsers) { user in
+                                LikeUserRow(
+                                    user: user,
+                                    isFollowing: followingStatuses[user.id] ?? false,
+                                    onFollowToggle: {
+                                        toggleFollow(user: user)
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 10)
+                    }
+                }
+            }
+            .navigationTitle("Likes")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+        .onAppear {
+            loadLikedUsers()
+        }
+    }
+    
+    private func loadLikedUsers() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            isLoading = false
+            return
+        }
+        
+        let db = Firestore.firestore()
+        
+        // First get the video document to get the likes array
+        db.collection("videos").document(videoId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error loading video likes: \(error)")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            guard let data = snapshot?.data(),
+                  let likes = data["likes"] as? [String] else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            // If no likes, return early
+            if likes.isEmpty {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            // Get user profiles for all users who liked the video
+            let dispatchGroup = DispatchGroup()
+            var users: [WaffleUser] = []
+            var followingStatuses: [String: Bool] = [:]
+            
+            for userId in likes {
+                dispatchGroup.enter()
+                
+                // Get user profile
+                db.collection("users").document(userId).getDocument { userSnapshot, userError in
+                    if let userError = userError {
+                        print("❌ Error loading user \(userId): \(userError)")
+                        dispatchGroup.leave()
+                        return
+                    }
+                    
+                    if let userSnapshot = userSnapshot {
+                        do {
+                            let waffleUser = try WaffleUser(from: userSnapshot)
+                            users.append(waffleUser)
+                            
+                            // Check if current user is following this user
+                            db.collection("users").document(currentUserId).collection("following").document(userId).getDocument { followSnapshot, followError in
+                                followingStatuses[userId] = followSnapshot?.exists ?? false
+                                dispatchGroup.leave()
+                            }
+                        } catch {
+                            print("❌ Error parsing user \(userId): \(error)")
+                            dispatchGroup.leave()
+                        }
+                    } else {
+                        dispatchGroup.leave()
+                    }
+                }
+            }
+            
+            dispatchGroup.notify(queue: .main) {
+                self.likedUsers = users
+                self.followingStatuses = followingStatuses
+                self.isLoading = false
+            }
+        }
+    }
+    
+    private func toggleFollow(user: WaffleUser) {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found for follow operation")
+            return
+        }
+        
+        let db = Firestore.firestore()
+        let isCurrentlyFollowing = followingStatuses[user.id] ?? false
+        
+        // Optimistic UI update
+        followingStatuses[user.id] = !isCurrentlyFollowing
+        
+        if !isCurrentlyFollowing {
+            // Follow user
+            db.collection("users").document(currentUserId).collection("following").document(user.id).setData([
+                "followedAt": Timestamp(date: Date())
+            ]) { error in
+                if let error = error {
+                    print("❌ Error following user: \(error)")
+                    // Revert on error
+                    DispatchQueue.main.async {
+                        self.followingStatuses[user.id] = false
+                    }
+                    return
+                }
+                
+                // Add current user to the target user's followers
+                db.collection("users").document(user.id).collection("followers").document(currentUserId).setData([
+                    "followedAt": Timestamp(date: Date())
+                ]) { error in
+                    if let error = error {
+                        print("❌ Error updating followers: \(error)")
+                    } else {
+                        print("✅ Successfully followed user: \(user.displayName)")
+                    }
+                }
+            }
+        } else {
+            // Unfollow user
+            db.collection("users").document(currentUserId).collection("following").document(user.id).delete { error in
+                if let error = error {
+                    print("❌ Error unfollowing user: \(error)")
+                    // Revert on error
+                    DispatchQueue.main.async {
+                        self.followingStatuses[user.id] = true
+                    }
+                    return
+                }
+                
+                // Remove current user from the target user's followers
+                db.collection("users").document(user.id).collection("followers").document(currentUserId).delete { error in
+                    if let error = error {
+                        print("❌ Error updating followers: \(error)")
+                    } else {
+                        print("✅ Successfully unfollowed user: \(user.displayName)")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Like User Row
+struct LikeUserRow: View {
+    let user: WaffleUser
+    let isFollowing: Bool
+    let onFollowToggle: () -> Void
+    @State private var showingUserProfile = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: {
+                showingUserProfile = true
+            }) {
+                HStack(spacing: 12) {
+                    // Profile Picture
+                    AuthorAvatarView(avatarString: user.profileImageURL.isEmpty ? "person.circle.fill" : user.profileImageURL)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(user.displayName)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Text(user.email)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Follow/Unfollow Button
+            Button(action: onFollowToggle) {
+                Text(isFollowing ? "Unfollow" : "Follow")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(isFollowing ? .red : .white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(isFollowing ? Color.clear : Color.orange)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isFollowing ? Color.red : Color.clear, lineWidth: 1)
+                    )
+                    .cornerRadius(16)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .sheet(isPresented: $showingUserProfile) {
+            UserProfileView(user: user)
+        }
     }
 }
 
