@@ -39,35 +39,6 @@ struct VideoCard: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
-                
-                // Like button overlay
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            toggleLike()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: isLiked ? "heart.fill" : "heart")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(isLiked ? .red : .white)
-                                
-                                if likeCount > 0 {
-                                    Text("\(likeCount)")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.black.opacity(0.6))
-                            .cornerRadius(12)
-                        }
-                        .padding(.trailing, 12)
-                        .padding(.bottom, 12)
-                    }
-                }
             }
             
             // Video info
@@ -86,11 +57,23 @@ struct VideoCard: View {
                 
                 Spacer()
                 
-                if !video.isWatched {
-                    Circle()
-                        .fill(Color.orange)
-                        .frame(width: 8, height: 8)
+                // Like button
+                Button(action: {
+                    toggleLike()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(isLiked ? .red : .gray)
+                        
+                        if likeCount > 0 {
+                            Text("\(likeCount)")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(16)
