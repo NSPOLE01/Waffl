@@ -162,6 +162,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var isRecording = false
     @Published var recordingDuration: Double = 0
     @Published var permissionDenied = false
+    @Published var sessionConfigured = false
     
     var captureSession: AVCaptureSession?
     private var movieOutput: AVCaptureMovieFileOutput?
@@ -211,51 +212,56 @@ class CameraManager: NSObject, ObservableObject {
         return
         #endif
         
-        captureSession = AVCaptureSession()
-        captureSession?.sessionPreset = .high
-        
-        // Add video input
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-            print("❌ No camera available")
-            return
-        }
-        
-        currentCamera = camera
-        
-        do {
-            let videoInput = try AVCaptureDeviceInput(device: camera)
-            if captureSession?.canAddInput(videoInput) == true {
-                captureSession?.addInput(videoInput)
+        // Setup camera on background queue
+        DispatchQueue.global(qos: .userInitiated).async {
+            let session = AVCaptureSession()
+            session.sessionPreset = .high
+            
+            // Add video input
+            guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+                print("❌ No camera available")
+                return
             }
-        } catch {
-            print("❌ Error setting up camera input: \(error)")
-            return
-        }
-        
-        // Add audio input
-        guard let microphone = AVCaptureDevice.default(for: .audio) else {
-            print("❌ No microphone available")
-            return
-        }
-        
-        do {
-            let audioInput = try AVCaptureDeviceInput(device: microphone)
-            if captureSession?.canAddInput(audioInput) == true {
-                captureSession?.addInput(audioInput)
+            
+            do {
+                let videoInput = try AVCaptureDeviceInput(device: camera)
+                if session.canAddInput(videoInput) {
+                    session.addInput(videoInput)
+                }
+            } catch {
+                print("❌ Error setting up camera input: \(error)")
+                return
             }
-        } catch {
-            print("❌ Error setting up audio input: \(error)")
-        }
-        
-        // Add movie output
-        movieOutput = AVCaptureMovieFileOutput()
-        if let movieOutput = movieOutput, captureSession?.canAddOutput(movieOutput) == true {
-            captureSession?.addOutput(movieOutput)
-        }
-        
-        // Start the session
-        DispatchQueue.global(qos: .background).async {
-            self.captureSession?.startRunning()
+            
+            // Add audio input
+            if let microphone = AVCaptureDevice.default(for: .audio) {
+                do {
+                    let audioInput = try AVCaptureDeviceInput(device: microphone)
+                    if session.canAddInput(audioInput) {
+                        session.addInput(audioInput)
+                    }
+                } catch {
+                    print("❌ Error setting up audio input: \(error)")
+                }
+            }
+            
+            // Add movie output
+            let output = AVCaptureMovieFileOutput()
+            if session.canAddOutput(output) {
+                session.addOutput(output)
+            }
+            
+            // Update properties on main queue
+            DispatchQueue.main.async {
+                self.captureSession = session
+                self.currentCamera = camera
+                self.movieOutput = output
+                self.sessionConfigured = true
+            }
+            
+            // Start the session
+            session.startRunning()
+            print("✅ Camera session started successfully")
         }
     }
     
@@ -395,16 +401,16 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
     }
 }
 
-// MARK: - Camera Preview
+// MARK: - Camera Preview  
 struct CameraPreview: UIViewRepresentable {
-    let cameraManager: CameraManager
+    @ObservedObject var cameraManager: CameraManager
     
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
+        view.backgroundColor = UIColor.black
         
         #if targetEnvironment(simulator)
         // Show mock camera preview on simulator
-        view.backgroundColor = UIColor.black
         let mockLabel = UILabel()
         mockLabel.text = "📱 Simulator Camera Preview\n\nCamera functionality works\non physical devices only"
         mockLabel.textColor = UIColor.white
@@ -421,13 +427,8 @@ struct CameraPreview: UIViewRepresentable {
             mockLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -20)
         ])
         #else
-        // Real camera preview on device
-        if let captureSession = cameraManager.captureSession {
-            let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-            previewLayer.frame = view.bounds
-            previewLayer.videoGravity = AVLayerVideoGravity.resizeAspectFill
-            view.layer.addSublayer(previewLayer)
-        }
+        // Real camera preview on device - will be added when session is ready
+        setupPreviewLayer(for: view)
         #endif
         
         return view
@@ -435,9 +436,32 @@ struct CameraPreview: UIViewRepresentable {
     
     func updateUIView(_ uiView: UIView, context: Context) {
         #if !targetEnvironment(simulator)
-        if let previewLayer = uiView.layer.sublayers?.first as? AVCaptureVideoPreviewLayer {
+        // Update preview layer when camera session becomes available
+        if let previewLayer = uiView.layer.sublayers?.first(where: { $0 is AVCaptureVideoPreviewLayer }) as? AVCaptureVideoPreviewLayer {
             previewLayer.frame = uiView.bounds
+        } else if cameraManager.sessionConfigured {
+            setupPreviewLayer(for: uiView)
         }
         #endif
     }
+    
+    #if !targetEnvironment(simulator)
+    private func setupPreviewLayer(for view: UIView) {
+        guard let captureSession = cameraManager.captureSession else {
+            // Session not ready yet, will be called again in updateUIView
+            return
+        }
+        
+        // Remove existing preview layer if any
+        view.layer.sublayers?.removeAll(where: { $0 is AVCaptureVideoPreviewLayer })
+        
+        // Add new preview layer
+        let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+        previewLayer.frame = view.bounds
+        previewLayer.videoGravity = AVLayerVideoGravity.resizeAspectFill
+        view.layer.addSublayer(previewLayer)
+        
+        print("✅ Camera preview layer added")
+    }
+    #endif
 }
