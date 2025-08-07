@@ -320,37 +320,60 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     func flipCamera() {
-        guard let captureSession = captureSession else { return }
+        #if targetEnvironment(simulator)
+        print("📱 Camera flip not available on simulator")
+        return
+        #endif
         
-        captureSession.beginConfiguration()
-        
-        // Remove current video input
-        let currentVideoInput = captureSession.inputs.first { input in
-            (input as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true
-        }
-        
-        if let videoInput = currentVideoInput {
-            captureSession.removeInput(videoInput)
-        }
-        
-        // Add new camera input
-        let newPosition: AVCaptureDevice.Position = currentCamera?.position == .back ? .front : .back
-        guard let newCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition) else {
-            captureSession.commitConfiguration()
+        guard let captureSession = captureSession,
+              let currentCamera = currentCamera,
+              sessionConfigured else {
+            print("❌ Camera session not ready for flip")
             return
         }
         
-        do {
-            let newVideoInput = try AVCaptureDeviceInput(device: newCamera)
-            if captureSession.canAddInput(newVideoInput) {
-                captureSession.addInput(newVideoInput)
-                currentCamera = newCamera
+        // Perform camera flip on background queue to avoid blocking UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            captureSession.beginConfiguration()
+            
+            // Remove current video input
+            let currentVideoInput = captureSession.inputs.first { input in
+                (input as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true
             }
-        } catch {
-            print("❌ Error flipping camera: \(error)")
+            
+            if let videoInput = currentVideoInput {
+                captureSession.removeInput(videoInput)
+            }
+            
+            // Determine new camera position
+            let newPosition: AVCaptureDevice.Position = currentCamera.position == .back ? .front : .back
+            
+            guard let newCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition) else {
+                print("❌ No camera available for position: \(newPosition)")
+                captureSession.commitConfiguration()
+                return
+            }
+            
+            do {
+                let newVideoInput = try AVCaptureDeviceInput(device: newCamera)
+                if captureSession.canAddInput(newVideoInput) {
+                    captureSession.addInput(newVideoInput)
+                    
+                    // Update current camera on main queue
+                    DispatchQueue.main.async {
+                        self.currentCamera = newCamera
+                    }
+                    
+                    print("✅ Camera flipped to \(newPosition == .front ? "front" : "back")")
+                } else {
+                    print("❌ Cannot add new camera input")
+                }
+            } catch {
+                print("❌ Error creating camera input for flip: \(error)")
+            }
+            
+            captureSession.commitConfiguration()
         }
-        
-        captureSession.commitConfiguration()
     }
     
     func stopSession() {
