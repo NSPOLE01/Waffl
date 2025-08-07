@@ -69,7 +69,7 @@ struct MyWafflsView: View {
                         EmptyMyVideosView()
                     } else {
                         ForEach(videos) { video in
-                            VideoCard(video: video)
+                            MyWafflVideoCard(video: video, currentUserProfile: authManager.currentUserProfile)
                                 .padding(.horizontal, 20)
                         }
                     }
@@ -182,5 +182,240 @@ struct EmptyMyVideosView: View {
             }
         }
         .padding(.vertical, 60)
+    }
+}
+
+// MARK: - My Waffle Video Card (with current profile picture)
+struct MyWafflVideoCard: View {
+    let video: WaffleVideo
+    let currentUserProfile: WaffleUser?
+    @State private var isLiked: Bool
+    @State private var likeCount: Int
+    @State private var viewCount: Int
+    @State private var showingLikesList = false
+    @EnvironmentObject var authManager: AuthManager
+    
+    init(video: WaffleVideo, currentUserProfile: WaffleUser?) {
+        self.video = video
+        self.currentUserProfile = currentUserProfile
+        self._isLiked = State(initialValue: video.isLikedByCurrentUser)
+        self._likeCount = State(initialValue: video.likeCount)
+        self._viewCount = State(initialValue: video.viewCount)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Video thumbnail/placeholder
+            Button(action: {
+                incrementViewCount()
+            }) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 200)
+                    
+                    VStack(spacing: 8) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.orange)
+                        
+                        Text("\(video.duration)s")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Video info with current profile picture
+            HStack {
+                // Use current user's profile picture instead of stored video avatar
+                if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
+                    AuthorAvatarView(avatarString: profileImageURL)
+                } else {
+                    AuthorAvatarView(avatarString: "person.circle.fill")
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(video.authorName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Views and likes section
+                HStack(spacing: 12) {
+                    // View count with eye icon
+                    HStack(spacing: 4) {
+                        Image(systemName: "eye")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        Text("\(viewCount)")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Like section with separate buttons
+                    HStack(spacing: 8) {
+                        // Heart button for liking
+                        Button(action: {
+                            toggleLike()
+                        }) {
+                            Image(systemName: isLiked ? "heart.fill" : "heart")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(isLiked ? .red : .gray)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Like count button for showing who liked
+                        if likeCount > 0 {
+                            Button(action: {
+                                showingLikesList = true
+                            }) {
+                                Text("\(likeCount)")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+            }
+        }
+        .padding(16)
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .sheet(isPresented: $showingLikesList) {
+            LikesListView(videoId: video.id)
+        }
+    }
+    
+    private func toggleLike() {
+        // Optimistic UI update
+        isLiked.toggle()
+        likeCount += isLiked ? 1 : -1
+        
+        // Update Firebase
+        updateLikeInFirebase()
+    }
+    
+    private func incrementViewCount() {
+        // Optimistic UI update
+        viewCount += 1
+        
+        // Update Firebase
+        updateViewCountInFirebase()
+    }
+    
+    private func updateViewCountInFirebase() {
+        let db = Firestore.firestore()
+        let videoRef = db.collection("videos").document(video.id)
+        
+        db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let videoDocument: DocumentSnapshot
+            do {
+                try videoDocument = transaction.getDocument(videoRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            guard let data = videoDocument.data() else {
+                let error = NSError(domain: "AppErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to retrieve video data"])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            let currentViewCount = data["viewCount"] as? Int ?? 0
+            
+            transaction.updateData([
+                "viewCount": currentViewCount + 1
+            ], forDocument: videoRef)
+            
+            return nil
+        }) { (object, error) in
+            if let error = error {
+                print("❌ Transaction failed for video view count: \(error)")
+                
+                // Revert optimistic UI update on failure
+                DispatchQueue.main.async {
+                    self.viewCount -= 1
+                }
+            } else {
+                print("✅ View count updated successfully for video: \(self.video.id)")
+            }
+        }
+    }
+    
+    private func updateLikeInFirebase() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found for like operation")
+            return
+        }
+        
+        let db = Firestore.firestore()
+        let videoRef = db.collection("videos").document(video.id)
+        
+        db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let videoDocument: DocumentSnapshot
+            do {
+                try videoDocument = transaction.getDocument(videoRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            guard let data = videoDocument.data() else {
+                let error = NSError(domain: "AppErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to retrieve video data"])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            var likes = data["likes"] as? [String] ?? []
+            let currentLikeCount = data["likeCount"] as? Int ?? 0
+            
+            if self.isLiked {
+                // Add like
+                if !likes.contains(currentUserId) {
+                    likes.append(currentUserId)
+                    transaction.updateData([
+                        "likes": likes,
+                        "likeCount": currentLikeCount + 1
+                    ], forDocument: videoRef)
+                }
+            } else {
+                // Remove like
+                if let index = likes.firstIndex(of: currentUserId) {
+                    likes.remove(at: index)
+                    transaction.updateData([
+                        "likes": likes,
+                        "likeCount": max(0, currentLikeCount - 1)
+                    ], forDocument: videoRef)
+                }
+            }
+            
+            return nil
+        }) { (object, error) in
+            if let error = error {
+                print("❌ Transaction failed for video like: \(error)")
+                
+                // Revert optimistic UI update on failure
+                DispatchQueue.main.async {
+                    self.isLiked.toggle()
+                    self.likeCount += self.isLiked ? 1 : -1
+                }
+            } else {
+                print("✅ Like status updated successfully for video: \(self.video.id)")
+            }
+        }
     }
 }
