@@ -16,6 +16,7 @@ struct VideoCard: View {
     @State private var likeCount: Int
     @State private var viewCount: Int
     @State private var showingLikesList = false
+    @State private var showingVideoPlayer = false
     @EnvironmentObject var authManager: AuthManager
     
     init(video: WaffleVideo) {
@@ -29,7 +30,7 @@ struct VideoCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Video thumbnail/placeholder
             Button(action: {
-                incrementViewCount()
+                showingVideoPlayer = true
             }) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
@@ -113,6 +114,9 @@ struct VideoCard: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
+        }
+        .fullScreenCover(isPresented: $showingVideoPlayer) {
+            VideoPlayerView(video: video)
         }
     }
     

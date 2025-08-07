@@ -68,6 +68,7 @@
 				Views/UserFriendsView.swift,
 				Views/UserProfileView.swift,
 				Views/VideoComponentsView.swift,
+				Views/VideoPlayerView.swift,
 				WafflApp.swift,
 			);
 			target = 91F0E9D32E25E5C60056D3AA /* Waffl */;
