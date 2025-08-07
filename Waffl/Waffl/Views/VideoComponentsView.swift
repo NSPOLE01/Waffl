@@ -14,6 +14,7 @@ struct VideoCard: View {
     let video: WaffleVideo
     @State private var isLiked: Bool
     @State private var likeCount: Int
+    @State private var viewCount: Int
     @State private var showingLikesList = false
     @EnvironmentObject var authManager: AuthManager
     
@@ -21,26 +22,32 @@ struct VideoCard: View {
         self.video = video
         self._isLiked = State(initialValue: video.isLikedByCurrentUser)
         self._likeCount = State(initialValue: video.likeCount)
+        self._viewCount = State(initialValue: video.viewCount)
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Video thumbnail/placeholder
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 200)
-                
-                VStack(spacing: 8) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 50))
-                        .foregroundColor(.orange)
+            Button(action: {
+                incrementViewCount()
+            }) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 200)
                     
-                    Text("\(video.duration)s")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                    VStack(spacing: 8) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.orange)
+                        
+                        Text("\(video.duration)s")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
+            .buttonStyle(PlainButtonStyle())
             
             // Video info
             HStack {
@@ -58,28 +65,42 @@ struct VideoCard: View {
                 
                 Spacer()
                 
-                // Like section with separate buttons
-                HStack(spacing: 8) {
-                    // Heart button for liking
-                    Button(action: {
-                        toggleLike()
-                    }) {
-                        Image(systemName: isLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(isLiked ? .red : .gray)
+                // Views and likes section
+                HStack(spacing: 12) {
+                    // View count with eye icon
+                    HStack(spacing: 4) {
+                        Image(systemName: "eye")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        Text("\(viewCount)")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
-                    // Like count button for showing who liked
-                    if likeCount > 0 {
+                    // Like section with separate buttons
+                    HStack(spacing: 8) {
+                        // Heart button for liking
                         Button(action: {
-                            showingLikesList = true
+                            toggleLike()
                         }) {
-                            Text("\(likeCount)")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
+                            Image(systemName: isLiked ? "heart.fill" : "heart")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(isLiked ? .red : .gray)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        
+                        // Like count button for showing who liked
+                        if likeCount > 0 {
+                            Button(action: {
+                                showingLikesList = true
+                            }) {
+                                Text("\(likeCount)")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
                 }
                 .padding(.horizontal, 8)
@@ -102,6 +123,54 @@ struct VideoCard: View {
         
         // TODO: Update Firebase
         updateLikeInFirebase()
+    }
+    
+    private func incrementViewCount() {
+        // Optimistic UI update
+        viewCount += 1
+        
+        // Update Firebase
+        updateViewCountInFirebase()
+    }
+    
+    private func updateViewCountInFirebase() {
+        let db = Firestore.firestore()
+        let videoRef = db.collection("videos").document(video.id)
+        
+        db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let videoDocument: DocumentSnapshot
+            do {
+                try videoDocument = transaction.getDocument(videoRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            guard let data = videoDocument.data() else {
+                let error = NSError(domain: "AppErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to retrieve video data"])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            let currentViewCount = data["viewCount"] as? Int ?? 0
+            
+            transaction.updateData([
+                "viewCount": currentViewCount + 1
+            ], forDocument: videoRef)
+            
+            return nil
+        }) { (object, error) in
+            if let error = error {
+                print("❌ Transaction failed for video view count: \(error)")
+                
+                // Revert optimistic UI update on failure
+                DispatchQueue.main.async {
+                    self.viewCount -= 1
+                }
+            } else {
+                print("✅ View count updated successfully for video: \(self.video.id)")
+            }
+        }
     }
     
     private func updateLikeInFirebase() {
@@ -483,6 +552,7 @@ struct WaffleVideo: Identifiable, Codable {
     let isWatched: Bool
     let likeCount: Int
     let isLikedByCurrentUser: Bool
+    let viewCount: Int
     
     // Initialize from Firestore document
     init(from document: DocumentSnapshot, currentUserId: String? = nil) throws {
@@ -506,6 +576,7 @@ struct WaffleVideo: Identifiable, Codable {
         self.uploadDate = uploadDateTimestamp.dateValue()
         self.isWatched = data?["isWatched"] as? Bool ?? false
         self.likeCount = data?["likeCount"] as? Int ?? 0
+        self.viewCount = data?["viewCount"] as? Int ?? 0
         
         // Check if current user liked this video
         if let currentUserId = currentUserId,
@@ -517,7 +588,7 @@ struct WaffleVideo: Identifiable, Codable {
     }
     
     // Initialize with parameters (for creating new videos)
-    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false, likeCount: Int = 0, isLikedByCurrentUser: Bool = false) {
+    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false, likeCount: Int = 0, isLikedByCurrentUser: Bool = false, viewCount: Int = 0) {
         self.id = id
         self.authorId = authorId
         self.authorName = authorName
@@ -529,6 +600,7 @@ struct WaffleVideo: Identifiable, Codable {
         self.isWatched = isWatched
         self.likeCount = likeCount
         self.isLikedByCurrentUser = isLikedByCurrentUser
+        self.viewCount = viewCount
     }
     
     // Convert to dictionary for Firestore
@@ -542,7 +614,8 @@ struct WaffleVideo: Identifiable, Codable {
             "uploadDate": Timestamp(date: uploadDate),
             "isWatched": isWatched,
             "likeCount": likeCount,
-            "likes": [] // Initialize with empty likes array
+            "likes": [], // Initialize with empty likes array
+            "viewCount": viewCount
         ]
         
         if let thumbnailURL = thumbnailURL {
