@@ -14,6 +14,7 @@ struct MyWafflsView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var videos: [WaffleVideo] = []
     @State private var isLoadingVideos = true
+    @State private var videoToDelete: WaffleVideo?
     
     var body: some View {
         NavigationView {
@@ -78,6 +79,10 @@ struct MyWafflsView: View {
                                     if let index = videos.firstIndex(where: { $0.id == video.id }) {
                                         videos.remove(at: index)
                                     }
+                                },
+                                onDeleteRequest: {
+                                    // Set the video to delete, which will show the alert
+                                    videoToDelete = video
                                 }
                             )
                             .padding(.horizontal, 20)
@@ -91,6 +96,19 @@ struct MyWafflsView: View {
             }
             .refreshable {
                 loadMyVideos()
+            }
+            .alert("Delete Video", isPresented: .constant(videoToDelete != nil)) {
+                Button("Cancel", role: .cancel) {
+                    videoToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let video = videoToDelete {
+                        deleteVideo(video)
+                    }
+                    videoToDelete = nil
+                }
+            } message: {
+                Text("Are you sure you want to delete this video? This action cannot be undone.")
             }
         }
     }
@@ -170,6 +188,77 @@ struct MyWafflsView: View {
             video.uploadDate >= startOfWeek
         }.count
     }
+    
+    private func deleteVideo(_ video: WaffleVideo) {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found for delete operation")
+            return
+        }
+        
+        // Only allow users to delete their own videos
+        guard video.authorId == currentUserId else {
+            print("❌ User cannot delete videos they didn't create")
+            return
+        }
+        
+        let db = Firestore.firestore()
+        
+        // Delete from Firestore
+        db.collection("videos").document(video.id).delete { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Error deleting video from Firestore: \(error.localizedDescription)")
+                } else {
+                    print("✅ Video deleted successfully from Firestore")
+                    
+                    // Update user's video count
+                    self.updateUserVideoCount()
+                    
+                    // Remove video from local array
+                    if let index = self.videos.firstIndex(where: { $0.id == video.id }) {
+                        self.videos.remove(at: index)
+                    }
+                }
+            }
+        }
+        
+        // Also delete the video file from Firebase Storage
+        deleteVideoFromStorage(video)
+    }
+    
+    private func deleteVideoFromStorage(_ video: WaffleVideo) {
+        let storage = Storage.storage()
+        
+        // Extract video file path from URL
+        if let videoURL = URL(string: video.videoURL) {
+            let videoRef = storage.reference(forURL: video.videoURL)
+            
+            videoRef.delete { error in
+                if let error = error {
+                    print("❌ Error deleting video file from Storage: \(error.localizedDescription)")
+                } else {
+                    print("✅ Video file deleted successfully from Storage")
+                }
+            }
+        }
+    }
+    
+    private func updateUserVideoCount() {
+        guard let currentUser = authManager.currentUser else { return }
+        
+        let db = Firestore.firestore()
+        db.collection("users").document(currentUser.uid).updateData([
+            "videosUploaded": FieldValue.increment(Int64(-1))
+        ]) { error in
+            if let error = error {
+                print("❌ Error updating video count after deletion: \(error.localizedDescription)")
+            } else {
+                print("✅ User video count updated after deletion")
+                // Refresh user profile
+                self.authManager.refreshUserProfile()
+            }
+        }
+    }
 }
 
 // MARK: - Empty My Videos View
@@ -205,17 +294,18 @@ struct MyWafflVideoCard: View {
     @State private var showingLikesList = false
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
-    @State private var showingDeleteAlert = false
     @State private var isDeleting = false
     @EnvironmentObject var authManager: AuthManager
     
-    // Callback for when video is deleted
+    // Callbacks
     let onDelete: () -> Void
+    let onDeleteRequest: () -> Void
     
-    init(video: WaffleVideo, currentUserProfile: WaffleUser?, onDelete: @escaping () -> Void) {
+    init(video: WaffleVideo, currentUserProfile: WaffleUser?, onDelete: @escaping () -> Void, onDeleteRequest: @escaping () -> Void) {
         self.video = video
         self.currentUserProfile = currentUserProfile
         self.onDelete = onDelete
+        self.onDeleteRequest = onDeleteRequest
         self._isLiked = State(initialValue: video.isLikedByCurrentUser)
         self._likeCount = State(initialValue: video.likeCount)
         self._viewCount = State(initialValue: video.viewCount)
@@ -241,7 +331,7 @@ struct MyWafflVideoCard: View {
                     HStack {
                         Spacer()
                         Button(action: {
-                            showingDeleteAlert = true
+                            onDeleteRequest()
                         }) {
                             Image(systemName: "trash")
                                 .font(.system(size: 16, weight: .medium))
@@ -352,86 +442,6 @@ struct MyWafflVideoCard: View {
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, currentUserProfile: currentUserProfile)
-        }
-        .alert("Delete Video", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                deleteVideo()
-            }
-        } message: {
-            Text("Are you sure you want to delete this video? This action cannot be undone.")
-        }
-    }
-    
-    private func deleteVideo() {
-        guard let currentUserId = authManager.currentUser?.uid else {
-            print("❌ No current user found for delete operation")
-            return
-        }
-        
-        // Only allow users to delete their own videos
-        guard video.authorId == currentUserId else {
-            print("❌ User cannot delete videos they didn't create")
-            return
-        }
-        
-        isDeleting = true
-        let db = Firestore.firestore()
-        
-        // Delete from Firestore
-        db.collection("videos").document(video.id).delete { error in
-            DispatchQueue.main.async {
-                self.isDeleting = false
-                
-                if let error = error {
-                    print("❌ Error deleting video from Firestore: \(error.localizedDescription)")
-                } else {
-                    print("✅ Video deleted successfully from Firestore")
-                    
-                    // Update user's video count
-                    self.updateUserVideoCount()
-                    
-                    // Call the deletion callback to remove from UI
-                    self.onDelete()
-                }
-            }
-        }
-        
-        // Also delete the video file from Firebase Storage
-        deleteVideoFromStorage()
-    }
-    
-    private func deleteVideoFromStorage() {
-        let storage = Storage.storage()
-        
-        // Extract video file path from URL
-        if let videoURL = URL(string: video.videoURL) {
-            let videoRef = storage.reference(forURL: video.videoURL)
-            
-            videoRef.delete { error in
-                if let error = error {
-                    print("❌ Error deleting video file from Storage: \(error.localizedDescription)")
-                } else {
-                    print("✅ Video file deleted successfully from Storage")
-                }
-            }
-        }
-    }
-    
-    private func updateUserVideoCount() {
-        guard let currentUser = authManager.currentUser else { return }
-        
-        let db = Firestore.firestore()
-        db.collection("users").document(currentUser.uid).updateData([
-            "videosUploaded": FieldValue.increment(Int64(-1))
-        ]) { error in
-            if let error = error {
-                print("❌ Error updating video count after deletion: \(error.localizedDescription)")
-            } else {
-                print("✅ User video count updated after deletion")
-                // Refresh user profile
-                self.authManager.refreshUserProfile()
-            }
         }
     }
     
