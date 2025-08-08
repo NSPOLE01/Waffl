@@ -13,6 +13,7 @@ struct CameraView: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject private var cameraManager = CameraManager()
     @State private var showingTimeUpAlert = false
+    @State private var autoStoppedVideoURL: URL?
     
     var body: some View {
         ZStack {
@@ -51,32 +52,36 @@ struct CameraView: View {
                 
                 Spacer()
                 
-                // Recording status and progress
+                // Recording status
                 if cameraManager.isRecording {
-                    VStack(spacing: 16) {
-                        // Recording indicator
-                        VStack(spacing: 8) {
-                            HStack {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                Text("REC")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            
-                            Text(formatTime(cameraManager.recordingDuration))
+                    VStack(spacing: 8) {
+                        HStack {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                            Text("REC")
                                 .foregroundColor(.white)
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.system(size: 14, weight: .semibold))
                         }
-                        .padding()
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(12)
                         
-                        // Progress bar
+                        Text(formatTime(cameraManager.recordingDuration))
+                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .padding()
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(12)
+                }
+                
+                Spacer()
+                
+                // Bottom controls
+                VStack(spacing: 16) {
+                    // Progress bar (only show when recording)
+                    if cameraManager.isRecording {
                         VStack(spacing: 8) {
                             HStack {
-                                Text("0:00")
+                                Text(formatTime(cameraManager.recordingDuration))
                                     .font(.system(size: 12))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -91,15 +96,12 @@ struct CameraView: View {
                         }
                         .padding(.horizontal, 40)
                     }
-                }
-                
-                Spacer()
-                
-                // Bottom controls
-                HStack {
-                    Spacer()
                     
-                    // Record button
+                    // Record button row
+                    HStack {
+                        Spacer()
+                        
+                        // Record button
                     Button(action: {
                         if cameraManager.isRecording {
                             cameraManager.stopRecording { url in
@@ -125,10 +127,11 @@ struct CameraView: View {
                                     .frame(width: 60, height: 60)
                             }
                         }
+                        }
+                        .disabled(cameraManager.recordingDuration >= 60) // 60 second limit
+                        
+                        Spacer()
                     }
-                    .disabled(cameraManager.recordingDuration >= 60) // 60 second limit
-                    
-                    Spacer()
                 }
                 .padding(.bottom, 40)
             }
@@ -176,15 +179,23 @@ struct CameraView: View {
                 showingTimeUpAlert = true
             }
         }
+        .onReceive(cameraManager.$autoStoppedVideoURL) { url in
+            // Set the video URL when auto-stop completes
+            if let url = url {
+                self.autoStoppedVideoURL = url
+            }
+        }
         .alert("Recording Complete", isPresented: $showingTimeUpAlert) {
             Button("OK") {
-                // Stop recording automatically
-                if cameraManager.isRecording {
-                    cameraManager.stopRecording { url in
-                        videoURL = url
-                        presentationMode.wrappedValue.dismiss()
-                    }
+                // Use the auto-stopped video URL if available
+                if let autoStoppedURL = autoStoppedVideoURL {
+                    videoURL = autoStoppedURL
+                    print("✅ Auto-stopped video set: \(autoStoppedURL)")
+                } else if let manualURL = cameraManager.autoStoppedVideoURL {
+                    videoURL = manualURL
+                    print("✅ Manager auto-stopped video set: \(manualURL)")
                 }
+                presentationMode.wrappedValue.dismiss()
             }
         } message: {
             Text("You've reached the 1-minute recording limit. Your video has been saved!")
@@ -205,6 +216,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var permissionDenied = false
     @Published var sessionConfigured = false
     @Published var recordingComplete = false
+    @Published var autoStoppedVideoURL: URL?
     
     var captureSession: AVCaptureSession?
     private var movieOutput: AVCaptureMovieFileOutput?
@@ -430,8 +442,12 @@ class CameraManager: NSObject, ObservableObject {
                 
                 // Auto-stop at 60 seconds
                 if self.recordingDuration >= 60 {
-                    self.movieOutput?.stopRecording()
+                    // Stop the timer first to prevent multiple calls
                     self.stopTimer()
+                    
+                    // Stop recording - this will trigger the delegate method
+                    self.movieOutput?.stopRecording()
+                    
                     DispatchQueue.main.async {
                         self.isRecording = false
                         self.recordingComplete = true
@@ -458,7 +474,13 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
         } else {
             print("✅ Video saved to: \(outputFileURL)")
             DispatchQueue.main.async {
-                self.completionHandler?(outputFileURL)
+                if let completionHandler = self.completionHandler {
+                    // Manual stop - use completion handler
+                    completionHandler(outputFileURL)
+                } else {
+                    // Auto stop - set the URL for the UI to handle
+                    self.autoStoppedVideoURL = outputFileURL
+                }
             }
         }
         
