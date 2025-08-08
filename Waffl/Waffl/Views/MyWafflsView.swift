@@ -210,21 +210,7 @@ struct MyWafflVideoCard: View {
             Button(action: {
                 showingVideoPlayer = true
             }) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 200)
-                    
-                    VStack(spacing: 8) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.orange)
-                        
-                        Text("\(video.duration)s")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                }
+                VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
             }
             .buttonStyle(PlainButtonStyle())
             

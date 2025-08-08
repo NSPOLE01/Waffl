@@ -32,21 +32,7 @@ struct VideoCard: View {
             Button(action: {
                 showingVideoPlayer = true
             }) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 200)
-                    
-                    VStack(spacing: 8) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.orange)
-                        
-                        Text("\(video.duration)s")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                }
+                VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
             }
             .buttonStyle(PlainButtonStyle())
             
@@ -627,6 +613,121 @@ struct WaffleVideo: Identifiable, Codable {
         }
         
         return dict
+    }
+}
+
+// MARK: - Video Thumbnail Cache
+class VideoThumbnailCache {
+    static let shared = VideoThumbnailCache()
+    private var cache = NSCache<NSString, UIImage>()
+    
+    private init() {
+        cache.countLimit = 100 // Limit cache to 100 thumbnails
+        cache.totalCostLimit = 50 * 1024 * 1024 // Limit cache to ~50MB
+    }
+    
+    func getThumbnail(for url: String) -> UIImage? {
+        return cache.object(forKey: url as NSString)
+    }
+    
+    func setThumbnail(_ image: UIImage, for url: String) {
+        let cost = Int(image.size.width * image.size.height * 4) // Estimate memory cost
+        cache.setObject(image, forKey: url as NSString, cost: cost)
+    }
+}
+
+// MARK: - Video Thumbnail View
+struct VideoThumbnailView: View {
+    let videoURL: String
+    let duration: Int
+    @State private var thumbnail: UIImage?
+    @State private var isLoading = true
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 200)
+            
+            if let thumbnail = thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 200)
+                    .clipped()
+                    .cornerRadius(12)
+            }
+            
+            // Overlay with play button and duration
+            VStack(spacing: 8) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.2)
+                } else {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 2)
+                }
+                
+                Text("\(duration)s")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.6))
+                    .cornerRadius(8)
+            }
+        }
+        .onAppear {
+            loadThumbnail()
+        }
+    }
+    
+    private func loadThumbnail() {
+        // Check cache first
+        if let cachedThumbnail = VideoThumbnailCache.shared.getThumbnail(for: videoURL) {
+            self.thumbnail = cachedThumbnail
+            self.isLoading = false
+            return
+        }
+        
+        // Generate new thumbnail
+        generateThumbnail()
+    }
+    
+    private func generateThumbnail() {
+        guard let url = URL(string: videoURL) else {
+            isLoading = false
+            return
+        }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let asset = AVAsset(url: url)
+            let imageGenerator = AVAssetImageGenerator(asset: asset)
+            imageGenerator.appliesPreferredTrackTransform = true
+            imageGenerator.maximumSize = CGSize(width: 300, height: 400) // Optimize for mobile
+            
+            do {
+                let time = CMTime(seconds: 0.5, preferredTimescale: 600) // Get frame at 0.5 seconds
+                let cgImage = try imageGenerator.copyCGImage(at: time, actualTime: nil)
+                let image = UIImage(cgImage: cgImage)
+                
+                // Cache the thumbnail
+                VideoThumbnailCache.shared.setThumbnail(image, for: self.videoURL)
+                
+                DispatchQueue.main.async {
+                    self.thumbnail = image
+                    self.isLoading = false
+                }
+            } catch {
+                print("❌ Error generating thumbnail for \(self.videoURL): \(error)")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
+            }
+        }
     }
 }
 
