@@ -24,6 +24,7 @@ struct VideoPlayerView: View {
     @State private var showingLikesList = false
     @State private var isPlaying = false
     @State private var hasViewBeenCounted = false
+    @State private var showHeartAnimation = false
     
     init(video: WaffleVideo, currentUserProfile: WaffleUser? = nil) {
         self.video = video
@@ -60,23 +61,34 @@ struct VideoPlayerView: View {
                     }
                     
                     // Video Player
-                    if let player = player {
-                        VideoPlayer(player: player)
-                            .aspectRatio(9/16, contentMode: .fit)
-                            .clipped()
-                            .onTapGesture {
-                                togglePlayPause()
-                            }
-                    } else {
-                        // Loading state
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.gray.opacity(0.3))
-                            .aspectRatio(9/16, contentMode: .fit)
-                            .overlay(
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(1.5)
-                            )
+                    ZStack {
+                        if let player = player {
+                            VideoPlayer(player: player)
+                                .aspectRatio(9/16, contentMode: .fit)
+                                .clipped()
+                                .onTapGesture {
+                                    togglePlayPause()
+                                }
+                                .onTapGesture(count: 2) {
+                                    handleDoubleTapLike()
+                                }
+                        } else {
+                            // Loading state
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.3))
+                                .aspectRatio(9/16, contentMode: .fit)
+                                .overlay(
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(1.5)
+                                )
+                        }
+                        
+                        // Heart animation overlay
+                        if showHeartAnimation {
+                            HeartAnimationView()
+                                .allowsHitTesting(false)
+                        }
                     }
                     
                     Spacer()
@@ -206,6 +218,33 @@ struct VideoPlayerView: View {
             player.play()
         }
         isPlaying.toggle()
+    }
+    
+    private func handleDoubleTapLike() {
+        // Only like if not already liked (prevent unlike on double tap)
+        if !isLiked {
+            isLiked = true
+            likeCount += 1
+            
+            // Show heart animation
+            showHeartAnimation = true
+            
+            // Hide animation after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                showHeartAnimation = false
+            }
+            
+            // Update Firebase
+            updateLikeInFirebase()
+        } else {
+            // Still show animation even if already liked
+            showHeartAnimation = true
+            
+            // Hide animation after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                showHeartAnimation = false
+            }
+        }
     }
     
     private func incrementViewCount() {

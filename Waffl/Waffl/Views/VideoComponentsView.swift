@@ -18,6 +18,7 @@ struct VideoCard: View {
     @State private var viewCount: Int
     @State private var showingLikesList = false
     @State private var showingVideoPlayer = false
+    @State private var showHeartAnimation = false
     @EnvironmentObject var authManager: AuthManager
     
     init(video: WaffleVideo) {
@@ -30,12 +31,24 @@ struct VideoCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Video thumbnail/placeholder
-            Button(action: {
-                showingVideoPlayer = true
-            }) {
-                VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
+            ZStack {
+                Button(action: {
+                    showingVideoPlayer = true
+                }) {
+                    VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .onTapGesture(count: 2) {
+                    // Double tap to like
+                    handleDoubleTapLike()
+                }
+                
+                // Heart animation overlay
+                if showHeartAnimation {
+                    HeartAnimationView()
+                        .allowsHitTesting(false)
+                }
             }
-            .buttonStyle(PlainButtonStyle())
             
             // Video info
             HStack {
@@ -107,12 +120,39 @@ struct VideoCard: View {
         }
     }
     
+    private func handleDoubleTapLike() {
+        // Only like if not already liked (prevent unlike on double tap)
+        if !isLiked {
+            isLiked = true
+            likeCount += 1
+            
+            // Show heart animation
+            showHeartAnimation = true
+            
+            // Hide animation after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                showHeartAnimation = false
+            }
+            
+            // Update Firebase
+            updateLikeInFirebase()
+        } else {
+            // Still show animation even if already liked
+            showHeartAnimation = true
+            
+            // Hide animation after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                showHeartAnimation = false
+            }
+        }
+    }
+    
     private func toggleLike() {
         // Optimistic UI update
         isLiked.toggle()
         likeCount += isLiked ? 1 : -1
         
-        // TODO: Update Firebase
+        // Update Firebase
         updateLikeInFirebase()
     }
     
@@ -614,6 +654,40 @@ struct WaffleVideo: Identifiable, Codable {
         }
         
         return dict
+    }
+}
+
+// MARK: - Heart Animation View
+struct HeartAnimationView: View {
+    @State private var isVisible = false
+    @State private var scale: CGFloat = 0.5
+    @State private var opacity: Double = 0.0
+    
+    var body: some View {
+        Image(systemName: "heart.fill")
+            .font(.system(size: 80, weight: .bold))
+            .foregroundColor(.red)
+            .scaleEffect(scale)
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    scale = 1.2
+                    opacity = 1.0
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        scale = 1.0
+                    }
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        scale = 0.8
+                        opacity = 0.0
+                    }
+                }
+            }
     }
 }
 
