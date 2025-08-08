@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVKit
+import AVFoundation
 import Firebase
 import FirebaseFirestore
 
@@ -156,6 +157,7 @@ struct VideoPlayerView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            setupAudioSession()
             setupVideoPlayer()
             incrementViewCount()
         }
@@ -164,6 +166,16 @@ struct VideoPlayerView: View {
         }
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
+        }
+    }
+    
+    private func setupAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+            print("✅ Audio session configured for playback")
+        } catch {
+            print("❌ Failed to set audio session category: \(error)")
         }
     }
     

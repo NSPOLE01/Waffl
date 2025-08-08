@@ -8,6 +8,7 @@
 import SwiftUI
 import Firebase
 import FirebaseFirestore
+import AVFoundation
 
 // MARK: - Video Card Component
 struct VideoCard: View {
