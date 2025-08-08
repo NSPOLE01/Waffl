@@ -52,7 +52,7 @@ struct MyWafflsView: View {
                         HStack(spacing: 20) {
                             StatCard(title: "Videos", value: "\(videos.count)", icon: "video.fill")
                             StatCard(title: "This Week", value: "\(getThisWeekVideosCount())", icon: "calendar")
-                            StatCard(title: "Total Views", value: "0", icon: "eye.fill")
+                            StatCard(title: "Total Views", value: "\(getTotalViewsCount())", icon: "eye.fill")
                         }
                         .padding(.horizontal, 20)
                     }
@@ -187,6 +187,12 @@ struct MyWafflsView: View {
         return videos.filter { video in
             video.uploadDate >= startOfWeek
         }.count
+    }
+    
+    private func getTotalViewsCount() -> Int {
+        return videos.reduce(0) { total, video in
+            total + video.viewCount
+        }
     }
     
     private func deleteVideo(_ video: WaffleVideo) {
