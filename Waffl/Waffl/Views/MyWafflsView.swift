@@ -8,6 +8,7 @@
 import SwiftUI
 import Firebase
 import FirebaseFirestore
+import FirebaseStorage
 
 struct MyWafflsView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -69,8 +70,17 @@ struct MyWafflsView: View {
                         EmptyMyVideosView()
                     } else {
                         ForEach(videos) { video in
-                            MyWafflVideoCard(video: video, currentUserProfile: authManager.currentUserProfile)
-                                .padding(.horizontal, 20)
+                            MyWafflVideoCard(
+                                video: video, 
+                                currentUserProfile: authManager.currentUserProfile,
+                                onDelete: {
+                                    // Remove video from local array when deleted
+                                    if let index = videos.firstIndex(where: { $0.id == video.id }) {
+                                        videos.remove(at: index)
+                                    }
+                                }
+                            )
+                            .padding(.horizontal, 20)
                         }
                     }
                 }
@@ -195,11 +205,17 @@ struct MyWafflVideoCard: View {
     @State private var showingLikesList = false
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
+    @State private var showingDeleteAlert = false
+    @State private var isDeleting = false
     @EnvironmentObject var authManager: AuthManager
     
-    init(video: WaffleVideo, currentUserProfile: WaffleUser?) {
+    // Callback for when video is deleted
+    let onDelete: () -> Void
+    
+    init(video: WaffleVideo, currentUserProfile: WaffleUser?, onDelete: @escaping () -> Void) {
         self.video = video
         self.currentUserProfile = currentUserProfile
+        self.onDelete = onDelete
         self._isLiked = State(initialValue: video.isLikedByCurrentUser)
         self._likeCount = State(initialValue: video.likeCount)
         self._viewCount = State(initialValue: video.viewCount)
@@ -218,6 +234,26 @@ struct MyWafflVideoCard: View {
                 .onTapGesture(count: 2) {
                     // Double tap to like
                     handleDoubleTapLike()
+                }
+                
+                // Delete button overlay (top-right corner)
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showingDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.red)
+                                .padding(8)
+                                .background(Color.black.opacity(0.7))
+                                .clipShape(Circle())
+                        }
+                        .padding(.top, 8)
+                        .padding(.trailing, 8)
+                    }
+                    Spacer()
                 }
                 
                 // Heart animation overlay
@@ -294,11 +330,108 @@ struct MyWafflVideoCard: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .opacity(isDeleting ? 0.6 : 1.0)
+        .overlay(
+            // Deleting indicator
+            isDeleting ? 
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.black.opacity(0.3))
+                .overlay(
+                    VStack(spacing: 8) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        Text("Deleting...")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                )
+            : nil
+        )
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, currentUserProfile: currentUserProfile)
+        }
+        .alert("Delete Video", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteVideo()
+            }
+        } message: {
+            Text("Are you sure you want to delete this video? This action cannot be undone.")
+        }
+    }
+    
+    private func deleteVideo() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found for delete operation")
+            return
+        }
+        
+        // Only allow users to delete their own videos
+        guard video.authorId == currentUserId else {
+            print("❌ User cannot delete videos they didn't create")
+            return
+        }
+        
+        isDeleting = true
+        let db = Firestore.firestore()
+        
+        // Delete from Firestore
+        db.collection("videos").document(video.id).delete { error in
+            DispatchQueue.main.async {
+                self.isDeleting = false
+                
+                if let error = error {
+                    print("❌ Error deleting video from Firestore: \(error.localizedDescription)")
+                } else {
+                    print("✅ Video deleted successfully from Firestore")
+                    
+                    // Update user's video count
+                    self.updateUserVideoCount()
+                    
+                    // Call the deletion callback to remove from UI
+                    self.onDelete()
+                }
+            }
+        }
+        
+        // Also delete the video file from Firebase Storage
+        deleteVideoFromStorage()
+    }
+    
+    private func deleteVideoFromStorage() {
+        let storage = Storage.storage()
+        
+        // Extract video file path from URL
+        if let videoURL = URL(string: video.videoURL) {
+            let videoRef = storage.reference(forURL: video.videoURL)
+            
+            videoRef.delete { error in
+                if let error = error {
+                    print("❌ Error deleting video file from Storage: \(error.localizedDescription)")
+                } else {
+                    print("✅ Video file deleted successfully from Storage")
+                }
+            }
+        }
+    }
+    
+    private func updateUserVideoCount() {
+        guard let currentUser = authManager.currentUser else { return }
+        
+        let db = Firestore.firestore()
+        db.collection("users").document(currentUser.uid).updateData([
+            "videosUploaded": FieldValue.increment(Int64(-1))
+        ]) { error in
+            if let error = error {
+                print("❌ Error updating video count after deletion: \(error.localizedDescription)")
+            } else {
+                print("✅ User video count updated after deletion")
+                // Refresh user profile
+                self.authManager.refreshUserProfile()
+            }
         }
     }
     
