@@ -755,6 +755,8 @@ struct VideoThumbnailView: View {
                     .cornerRadius(8)
             }
         }
+        .frame(height: 200) // Constrain the entire ZStack
+        .clipped() // Ensure nothing extends beyond bounds
         .onAppear {
             loadThumbnail()
         }

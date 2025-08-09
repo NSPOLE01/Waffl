@@ -86,6 +86,7 @@ struct MyWafflsView: View {
                                 }
                             )
                             .padding(.horizontal, 20)
+                            .allowsHitTesting(true) // Ensure card allows hit testing
                         }
                     }
                 }
@@ -301,6 +302,7 @@ struct MyWafflVideoCard: View {
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
     @State private var isDeleting = false
+    @State private var showingUserProfile = false
     @EnvironmentObject var authManager: AuthManager
     
     // Callbacks
@@ -318,114 +320,183 @@ struct MyWafflVideoCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Video thumbnail/placeholder
-            ZStack {
+        VStack(alignment: .leading, spacing: 20) {
+            // SEPARATE AUTHOR INFO CONTAINER - ONLY PROFILE PIC AND NAME CLICKABLE
+            HStack {
+                // Profile picture - clickable to show user profile
                 Button(action: {
-                    showingVideoPlayer = true
+                    print("🔍 Profile picture tapped for user: \(video.authorName)")
+                    showingUserProfile = true
                 }) {
-                    VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
+                    if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
+                        AuthorAvatarView(avatarString: profileImageURL)
+                    } else {
+                        AuthorAvatarView(avatarString: "person.circle.fill")
+                    }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .onTapGesture(count: 2) {
-                    // Double tap to like
-                    handleDoubleTapLike()
-                }
+                .contentShape(Circle()) // Only the circular profile pic area is tappable
                 
-                // Delete button overlay (top-right corner)
-                VStack {
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            onDeleteRequest()
-                        }) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red)
-                                .padding(8)
-                                .background(Color.black.opacity(0.7))
-                                .clipShape(Circle())
-                        }
-                        .padding(.top, 8)
-                        .padding(.trailing, 8)
-                    }
-                    Spacer()
-                }
-                
-                // Heart animation overlay
-                if showHeartAnimation {
-                    HeartAnimationView()
-                        .allowsHitTesting(false)
-                }
-            }
-            
-            // Video info with current profile picture
-            HStack {
-                // Use current user's profile picture instead of stored video avatar
-                if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
-                    AuthorAvatarView(avatarString: profileImageURL)
-                } else {
-                    AuthorAvatarView(avatarString: "person.circle.fill")
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(video.authorName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                // Views and likes section
-                HStack(spacing: 12) {
-                    // View count with eye icon
-                    HStack(spacing: 4) {
-                        Image(systemName: "eye")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.gray)
+                // Name and date - clickable to show user profile  
+                Button(action: {
+                    print("🔍 Author name tapped for user: \(video.authorName)")
+                    showingUserProfile = true
+                }) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(video.authorName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
                         
-                        Text("\(viewCount)")
-                            .font(.system(size: 16, weight: .medium))
+                        Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
+                            .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle()) // Only the text area is tappable
+                
+                Spacer()
+                    // Spacer area is NOT clickable - no gestures
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 4)
+            .background(Color.clear) // Clean background
+            .allowsHitTesting(true) // Allow specific button interactions
+            .frame(maxWidth: .infinity) // Take full width
+            
+            // SEPARATE VIDEO CONTAINER - COMPLETELY ISOLATED 
+            VStack(spacing: 0) {
+                ZStack {
+                    // Base container with strict boundaries
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(height: 200)
                     
-                    // Like section with separate buttons
-                    HStack(spacing: 8) {
-                        // Heart button for liking
-                        Button(action: {
-                            toggleLike()
-                        }) {
+                    // Video content with precise tap area
+                    VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
+                        .frame(height: 200)
+                        .clipped()
+                        .contentShape(Rectangle()) // Define exact video tap area
+                        .onTapGesture {
+                            print("🔍 Video thumbnail onTapGesture triggered for video: \(video.id)")
+                            showingVideoPlayer = true
+                        }
+                    
+                    // Delete button overlay (positioned absolutely)
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                onDeleteRequest()
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .padding(8)
+                                    .background(Color.black.opacity(0.7))
+                                    .clipShape(Circle())
+                            }
+                            .padding(.top, 8)
+                            .padding(.trailing, 8)
+                            .allowsHitTesting(true) // Ensure delete button works
+                        }
+                        Spacer()
+                    }
+                    .allowsHitTesting(true) // Allow delete button interaction
+                    
+                    // Heart animation overlay
+                    if showHeartAnimation {
+                        HeartAnimationView()
+                            .allowsHitTesting(false)
+                    }
+                }
+                .frame(height: 200)
+                .cornerRadius(12)
+                .clipped()
+            }
+            .frame(height: 200) // Strict constraint on video container
+            .clipped() // Ensure nothing extends beyond video container
+            .allowsHitTesting(true) // Allow video interaction only
+            .background(Color.clear) // Clean video background
+            .contentShape(Rectangle()) // Define exact boundaries for the video container
+            
+            // SEPARATE ENGAGEMENT BUTTONS CONTAINER - COMPLETELY ISOLATED
+            VStack(spacing: 0) {
+                HStack(spacing: 16) {
+                    // View count with eye icon
+                    Button(action: {
+                        print("🔍 View count tapped (no action) for video: \(video.id)")
+                        // Just display, no action needed
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "eye")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.gray)
+                            
+                            Text("\(viewCount)")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .allowsHitTesting(true)
+                    
+                    // Like section - isolated button
+                    Button(action: {
+                        print("🔍 Like button tapped for video: \(video.id)")
+                        toggleLike()
+                    }) {
+                        HStack(spacing: 8) {
                             Image(systemName: isLiked ? "heart.fill" : "heart")
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(isLiked ? .red : .gray)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Like count button for showing who liked
-                        if likeCount > 0 {
-                            Button(action: {
-                                showingLikesList = true
-                            }) {
+                                .animation(.easeInOut(duration: 0.2), value: isLiked)
+                            
+                            if likeCount > 0 {
                                 Text("\(likeCount)")
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.secondary)
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .allowsHitTesting(true)
+                    
+                    Spacer()
+                    
+                    // Like count button for showing who liked
+                    if likeCount > 0 {
+                        Button(action: {
+                            showingLikesList = true
+                        }) {
+                            Text("See likes")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.blue)
+                                .underline()
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .allowsHitTesting(true)
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 4)
             }
+            .allowsHitTesting(true) // Allow engagement button interactions
+            .frame(maxWidth: .infinity) // Take full width
+            .background(Color.clear) // Clean engagement background
         }
         .padding(16)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .allowsHitTesting(!isDeleting) // Prevent all interactions if deleting
         .opacity(isDeleting ? 0.6 : 1.0)
         .overlay(
             // Deleting indicator
@@ -446,12 +517,30 @@ struct MyWafflVideoCard: View {
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
         }
+        .sheet(isPresented: $showingUserProfile) {
+            // Since this is the user's own video, show their own profile
+            if let userProfile = currentUserProfile {
+                UserProfileView(user: userProfile)
+            } else {
+                // Fallback - create a temporary user profile from video data
+                UserProfileView(user: WaffleUser(
+                    id: video.authorId,
+                    email: "", // We don't have email from video data
+                    displayName: video.authorName,
+                    createdAt: video.uploadDate, // Use upload date as fallback
+                    profileImageURL: video.authorAvatar.hasPrefix("http") ? video.authorAvatar : ""
+                ))
+            }
+        }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, currentUserProfile: currentUserProfile)
         }
     }
     
     private func handleDoubleTapLike() {
+        print("🔍 handleDoubleTapLike called for video: \(video.id)")
+        print("🔍 Current like state: \(isLiked)")
+        
         // Only like if not already liked (prevent unlike on double tap)
         if !isLiked {
             isLiked = true
@@ -479,9 +568,14 @@ struct MyWafflVideoCard: View {
     }
     
     private func toggleLike() {
+        print("🔍 MyWafflVideoCard toggleLike called for video: \(video.id)")
+        print("🔍 Current like state - isLiked: \(isLiked), likeCount: \(likeCount)")
+        
         // Optimistic UI update
         isLiked.toggle()
         likeCount += isLiked ? 1 : -1
+        
+        print("🔍 After toggle - isLiked: \(isLiked), likeCount: \(likeCount)")
         
         // Update Firebase
         updateLikeInFirebase()
@@ -536,10 +630,14 @@ struct MyWafflVideoCard: View {
     }
     
     private func updateLikeInFirebase() {
+        print("🔍 MyWafflVideoCard updateLikeInFirebase called for video: \(video.id)")
+        
         guard let currentUserId = authManager.currentUser?.uid else {
             print("❌ No current user found for like operation")
             return
         }
+        
+        print("🔍 Current user ID: \(currentUserId)")
         
         let db = Firestore.firestore()
         let videoRef = db.collection("videos").document(video.id)

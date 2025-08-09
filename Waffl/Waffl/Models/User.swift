@@ -37,6 +37,22 @@ struct WaffleUser: Codable, Identifiable, Hashable {
         return lhs.id == rhs.id && lhs.uid == rhs.uid
     }
     
+    // Manual initializer for creating WaffleUser instances
+    init(id: String, uid: String? = nil, firstName: String = "", lastName: String = "", email: String, displayName: String, createdAt: Date = Date(), updatedAt: Date = Date(), videosUploaded: Int = 0, friendsCount: Int = 0, weeksParticipated: Int = 0, profileImageURL: String = "") {
+        self.id = id
+        self.uid = uid ?? id
+        self.firstName = firstName
+        self.lastName = lastName
+        self.email = email
+        self.displayName = displayName
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.videosUploaded = videosUploaded
+        self.friendsCount = friendsCount
+        self.weeksParticipated = weeksParticipated
+        self.profileImageURL = profileImageURL
+    }
+    
     // Initialize from Firestore document
     init(from document: DocumentSnapshot) throws {
         let data = document.data()
