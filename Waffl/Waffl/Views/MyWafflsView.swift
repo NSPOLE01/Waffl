@@ -321,9 +321,7 @@ struct MyWafflVideoCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // SEPARATE AUTHOR INFO CONTAINER - ONLY PROFILE PIC AND NAME CLICKABLE
             HStack {
-                // Profile picture - clickable to show user profile
                 Button(action: {
                     print("🔍 Profile picture tapped for user: \(video.authorName)")
                     showingUserProfile = true
