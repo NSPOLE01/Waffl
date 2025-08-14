@@ -333,8 +333,7 @@ struct MyWafflVideoCard: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .contentShape(Circle()) // Only the circular profile pic area is tappable
-                
+                .contentShape(Circle()) 
                 // Name and date - clickable to show user profile  
                 Button(action: {
                     print("🔍 Author name tapped for user: \(video.authorName)")
