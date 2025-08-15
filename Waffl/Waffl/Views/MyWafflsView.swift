@@ -333,8 +333,7 @@ struct MyWafflVideoCard: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .contentShape(Circle()) 
-                // Name and date - clickable to show user profile  
+                .contentShape(Circle())
                 Button(action: {
                     print("🔍 Author name tapped for user: \(video.authorName)")
                     showingUserProfile = true
