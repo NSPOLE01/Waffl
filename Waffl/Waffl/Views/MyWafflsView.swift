@@ -305,7 +305,6 @@ struct MyWafflVideoCard: View {
     @State private var showingUserProfile = false
     @EnvironmentObject var authManager: AuthManager
     
-    // Callbacks
     let onDelete: () -> Void
     let onDeleteRequest: () -> Void
     
