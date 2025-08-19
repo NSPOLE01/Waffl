@@ -351,7 +351,7 @@ struct MyWafflVideoCard: View {
                 .contentShape(Rectangle()) // Only the text area is tappable
                 
                 Spacer()
-                    // Spacer area is NOT clickable - no gestures
+                    
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 4)
