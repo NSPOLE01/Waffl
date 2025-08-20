@@ -390,7 +390,7 @@ struct MyWafflVideoCard: View {
                             }) {
                                 Image(systemName: "trash")
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.red)
                                     .padding(8)
                                     .background(Color.black.opacity(0.7))
                                     .clipShape(Circle())
