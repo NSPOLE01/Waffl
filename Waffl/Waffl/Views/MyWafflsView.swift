@@ -444,46 +444,40 @@ struct MyWafflVideoCard: View {
                     .buttonStyle(PlainButtonStyle())
                     .allowsHitTesting(true)
                     
-                    // Like section - isolated button
-                    Button(action: {
-                        print("🔍 Like button tapped for video: \(video.id)")
-                        toggleLike()
-                    }) {
-                        HStack(spacing: 8) {
+                    // Like section with separate heart and count buttons
+                    HStack(spacing: 8) {
+                        // Heart button for liking
+                        Button(action: {
+                            print("🔍 Like button tapped for video: \(video.id)")
+                            toggleLike()
+                        }) {
                             Image(systemName: isLiked ? "heart.fill" : "heart")
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(isLiked ? .red : .gray)
                                 .animation(.easeInOut(duration: 0.2), value: isLiked)
-                            
-                            if likeCount > 0 {
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .allowsHitTesting(true)
+                        
+                        // Like count button for showing who liked
+                        if likeCount > 0 {
+                            Button(action: {
+                                showingLikesList = true
+                            }) {
                                 Text("\(likeCount)")
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.secondary)
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .allowsHitTesting(true)
                         }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 14)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .allowsHitTesting(true)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 14)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
                     
                     Spacer()
-                    
-                    // Like count button for showing who liked
-                    if likeCount > 0 {
-                        Button(action: {
-                            showingLikesList = true
-                        }) {
-                            Text("See likes")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.blue)
-                                .underline()
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .allowsHitTesting(true)
-                    }
                 }
                 .padding(.horizontal, 4)
             }
