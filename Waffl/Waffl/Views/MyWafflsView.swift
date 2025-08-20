@@ -376,6 +376,10 @@ struct MyWafflVideoCard: View {
                             print("🔍 Video thumbnail onTapGesture triggered for video: \(video.id)")
                             showingVideoPlayer = true
                         }
+                        .onTapGesture(count: 2) {
+                            print("🔍 Video thumbnail double-tap triggered for video: \(video.id)")
+                            handleDoubleTapLike()
+                        }
                     
                     // Delete button overlay (positioned absolutely)
                     VStack {
