@@ -15,6 +15,7 @@ struct MyWafflsView: View {
     @State private var videos: [WaffleVideo] = []
     @State private var isLoadingVideos = true
     @State private var videoToDelete: WaffleVideo?
+    @State private var showSuccessAlert = false
     
     var body: some View {
         NavigationView {
@@ -111,6 +112,35 @@ struct MyWafflsView: View {
             } message: {
                 Text("Are you sure you want to delete this video? This action cannot be undone.")
             }
+            .overlay(
+                // Success alert overlay
+                showSuccessAlert ? 
+                VStack {
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                        
+                        Text("Video deleted successfully")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(Color.green)
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 50)
+                .animation(.easeInOut(duration: 0.3), value: showSuccessAlert)
+                .zIndex(1000)
+                : nil
+            )
         }
     }
     
@@ -224,6 +254,14 @@ struct MyWafflsView: View {
                     // Remove video from local array
                     if let index = self.videos.firstIndex(where: { $0.id == video.id }) {
                         self.videos.remove(at: index)
+                    }
+                    
+                    // Show success alert
+                    self.showSuccessAlert = true
+                    
+                    // Hide success alert after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                        self.showSuccessAlert = false
                     }
                 }
             }
