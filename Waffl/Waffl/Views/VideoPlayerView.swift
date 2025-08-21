@@ -18,19 +18,19 @@ struct VideoPlayerView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var authManager: AuthManager
     @State private var player: AVPlayer?
-    @State private var isLiked: Bool
-    @State private var likeCount: Int
+    @Binding var isLiked: Bool
+    @Binding var likeCount: Int
     @State private var viewCount: Int
     @State private var showingLikesList = false
     @State private var isPlaying = false
     @State private var hasViewBeenCounted = false
     @State private var showHeartAnimation = false
     
-    init(video: WaffleVideo, currentUserProfile: WaffleUser? = nil) {
+    init(video: WaffleVideo, currentUserProfile: WaffleUser? = nil, isLiked: Binding<Bool>, likeCount: Binding<Int>) {
         self.video = video
         self.currentUserProfile = currentUserProfile
-        self._isLiked = State(initialValue: video.isLikedByCurrentUser)
-        self._likeCount = State(initialValue: video.likeCount)
+        self._isLiked = isLiked
+        self._likeCount = likeCount
         self._viewCount = State(initialValue: video.viewCount)
     }
     

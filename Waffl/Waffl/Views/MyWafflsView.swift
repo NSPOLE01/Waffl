@@ -564,7 +564,7 @@ struct MyWafflVideoCard: View {
             }
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
-            VideoPlayerView(video: video, currentUserProfile: currentUserProfile)
+            VideoPlayerView(video: video, currentUserProfile: currentUserProfile, isLiked: $isLiked, likeCount: $likeCount)
         }
     }
     
