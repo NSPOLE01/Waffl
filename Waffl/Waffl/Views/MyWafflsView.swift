@@ -35,16 +35,6 @@ struct MyWafflsView: View {
                             }
                             
                             Spacer()
-                            
-                            // Video count
-                            VStack {
-                                Text("Total")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text("\(videos.count)")
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.orange)
-                            }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
