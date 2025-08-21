@@ -116,7 +116,7 @@ struct VideoCard: View {
             LikesListView(videoId: video.id)
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
-            VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount)
+            VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
         }
     }
     

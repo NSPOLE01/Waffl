@@ -20,18 +20,18 @@ struct VideoPlayerView: View {
     @State private var player: AVPlayer?
     @Binding var isLiked: Bool
     @Binding var likeCount: Int
-    @State private var viewCount: Int
+    @Binding var viewCount: Int
     @State private var showingLikesList = false
     @State private var isPlaying = false
     @State private var hasViewBeenCounted = false
     @State private var showHeartAnimation = false
     
-    init(video: WaffleVideo, currentUserProfile: WaffleUser? = nil, isLiked: Binding<Bool>, likeCount: Binding<Int>) {
+    init(video: WaffleVideo, currentUserProfile: WaffleUser? = nil, isLiked: Binding<Bool>, likeCount: Binding<Int>, viewCount: Binding<Int>) {
         self.video = video
         self.currentUserProfile = currentUserProfile
         self._isLiked = isLiked
         self._likeCount = likeCount
-        self._viewCount = State(initialValue: video.viewCount)
+        self._viewCount = viewCount
     }
     
     var body: some View {
