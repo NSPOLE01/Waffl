@@ -42,7 +42,7 @@ struct MyWafflsView: View {
                         // Quick stats
                         HStack(spacing: 20) {
                             StatCard(title: "Videos", value: "\(videos.count)", icon: "video.fill")
-                            StatCard(title: "This Week", value: "\(getThisWeekVideosCount())", icon: "calendar")
+                            StatCard(title: "Total Likes", value: "\(getTotalLikesCount())", icon: "heart.fill")
                             StatCard(title: "Total Views", value: "\(getTotalViewsCount())", icon: "eye.fill")
                         }
                         .padding(.horizontal, 20)
@@ -213,6 +213,12 @@ struct MyWafflsView: View {
     private func getTotalViewsCount() -> Int {
         return videos.reduce(0) { total, video in
             total + video.viewCount
+        }
+    }
+    
+    private func getTotalLikesCount() -> Int {
+        return videos.reduce(0) { total, video in
+            total + video.likeCount
         }
     }
     
