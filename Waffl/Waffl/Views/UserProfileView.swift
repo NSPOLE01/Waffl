@@ -74,15 +74,6 @@ struct UserProfileView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
-                    
-                    VStack(spacing: 8) {
-                        Text("\(user.weeksParticipated)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Weeks")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
                 }
                 
                 // Follow/Unfollow Button
