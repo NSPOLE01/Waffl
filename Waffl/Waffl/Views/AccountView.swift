@@ -87,15 +87,6 @@ struct AccountView: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    
-                    VStack(spacing: 8) {
-                        Text("\(authManager.currentUserProfile?.weeksParticipated ?? 0)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Weeks")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
                 }
                 
                 Spacer()
