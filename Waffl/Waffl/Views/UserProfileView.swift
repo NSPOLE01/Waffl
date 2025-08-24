@@ -23,8 +23,8 @@ struct UserProfileView: View {
         VStack(spacing: 0) {
             // Instagram-style Profile Header
             HStack(alignment: .top, spacing: 20) {
-                // Profile Picture (left side)
-                VStack(spacing: 16) {
+                // Profile Picture and Follow Button (left side)
+                VStack(spacing: 20) {
                     AsyncImage(url: URL(string: user.profileImageURL)) { image in
                         image
                             .resizable()
@@ -42,7 +42,7 @@ struct UserProfileView: View {
                             )
                     }
                     
-                    // Follow/Unfollow Button (underneath profile picture)
+                    // Follow/Unfollow Button (bigger and more rounded)
                     if isLoadingFollowStatus {
                         ProgressView()
                             .scaleEffect(0.8)
@@ -55,42 +55,49 @@ struct UserProfileView: View {
                             }
                         }) {
                             Text(isFollowing ? "Following" : "Follow")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(isFollowing ? .orange : .white)
-                                .frame(maxWidth: 90)
-                                .padding(.vertical, 8)
+                                .frame(width: 120, height: 36)
                                 .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
-                                .cornerRadius(6)
+                                .cornerRadius(18)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: 18)
                                         .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
                                 )
                         }
                     }
                 }
                 
-                // Stats (right side) - Show locked state if not following
-                if !isLoadingFollowStatus && !isFollowing {
-                    // Locked Profile State
-                    VStack(spacing: 16) {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.gray)
-                        
-                        VStack(spacing: 4) {
-                            Text("Profile locked")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Text("Follow to see content")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
+                // Name, Stats and Content (right side)
+                VStack(alignment: .leading, spacing: 16) {
+                    // Name at the top
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(user.displayName)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.primary)
                     }
-                } else {
-                    // Stats (only show when following or loading)
-                    VStack(spacing: 16) {
-                        HStack(spacing: 30) {
+                    
+                    // Stats or locked state below name
+                    if !isLoadingFollowStatus && !isFollowing {
+                        // Locked Profile State
+                        VStack(spacing: 12) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 32))
+                                .foregroundColor(.gray)
+                            
+                            VStack(spacing: 4) {
+                                Text("Profile locked")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Text("Follow to see content")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    } else {
+                        // Stats (only show when following or loading)
+                        HStack(spacing: 24) {
                             VStack(spacing: 4) {
                                 Text("\(user.videosUploaded)")
                                     .font(.system(size: 18, weight: .bold))
@@ -126,8 +133,6 @@ struct UserProfileView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        
-                        Spacer()
                     }
                 }
                 
@@ -135,24 +140,6 @@ struct UserProfileView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
-            
-            // Name and email below the header
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(user.displayName)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Text(user.email)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
             
             Spacer()
         }
