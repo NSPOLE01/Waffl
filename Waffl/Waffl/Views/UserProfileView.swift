@@ -77,61 +77,41 @@ struct UserProfileView: View {
                             .foregroundColor(.primary)
                     }
                     
-                    // Stats or locked state below name
-                    if !isLoadingFollowStatus && !isFollowing {
-                        // Locked Profile State
-                        VStack(spacing: 12) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(.gray)
-                            
+                    // Stats (always show)
+                    HStack(spacing: 24) {
+                        VStack(spacing: 4) {
+                            Text("\(user.videosUploaded)")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Videos")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        NavigationLink(destination: UserFriendsView(user: user)) {
                             VStack(spacing: 4) {
-                                Text("Profile locked")
-                                    .font(.system(size: 14, weight: .semibold))
+                                Text("\(user.friendsCount)")
+                                    .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.primary)
-                                
-                                Text("Follow to see content")
+                                Text("Friends")
                                     .font(.system(size: 12))
                                     .foregroundColor(.secondary)
                             }
                         }
-                    } else {
-                        // Stats (only show when following or loading)
-                        HStack(spacing: 24) {
-                            VStack(spacing: 4) {
-                                Text("\(user.videosUploaded)")
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        VStack(spacing: 4) {
+                            if isLoadingLikes {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            } else {
+                                Text("\(totalLikes)")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.primary)
-                                Text("Videos")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
                             }
-                            
-                            NavigationLink(destination: UserFriendsView(user: user)) {
-                                VStack(spacing: 4) {
-                                    Text("\(user.friendsCount)")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.primary)
-                                    Text("Friends")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            VStack(spacing: 4) {
-                                if isLoadingLikes {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                } else {
-                                    Text("\(totalLikes)")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.primary)
-                                }
-                                Text("Likes")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
-                            }
+                            Text("Likes")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
                         }
                     }
                 }
@@ -141,7 +121,31 @@ struct UserProfileView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             
-            Spacer()
+            // Locked Profile Message (only show when not following)
+            if !isLoadingFollowStatus && !isFollowing {
+                Spacer()
+                    .frame(maxHeight: 60)
+                
+                VStack(spacing: 20) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 70))
+                        .foregroundColor(.gray)
+                    
+                    VStack(spacing: 8) {
+                        Text("This profile is locked")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Follow to see content")
+                            .font(.system(size: 18))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+            } else {
+                Spacer()
+            }
         }
         .navigationTitle(user.firstName)
         .navigationBarTitleDisplayMode(.inline)
