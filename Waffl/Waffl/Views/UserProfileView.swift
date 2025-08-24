@@ -16,6 +16,8 @@ struct UserProfileView: View {
     
     @State private var isFollowing = false
     @State private var isLoadingFollowStatus = true
+    @State private var totalLikes = 0
+    @State private var isLoadingLikes = true
     
     var body: some View {
         VStack(spacing: 30) {
@@ -74,6 +76,20 @@ struct UserProfileView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
+                    
+                    VStack(spacing: 8) {
+                        if isLoadingLikes {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("\(totalLikes)")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                        Text("Likes")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 // Follow/Unfollow Button
@@ -110,9 +126,32 @@ struct UserProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             checkFollowStatus()
+            loadTotalLikes()
         }
     }
     
+    
+    private func loadTotalLikes() {
+        let db = Firestore.firestore()
+        
+        db.collection("videos").whereField("authorId", isEqualTo: user.uid).getDocuments { snapshot, error in
+            DispatchQueue.main.async {
+                self.isLoadingLikes = false
+                
+                if let error = error {
+                    print("❌ Error loading user videos for likes: \(error.localizedDescription)")
+                    return
+                }
+                
+                let totalLikes = snapshot?.documents.reduce(0) { total, document in
+                    let likeCount = document.data()["likeCount"] as? Int ?? 0
+                    return total + likeCount
+                } ?? 0
+                
+                self.totalLikes = totalLikes
+            }
+        }
+    }
     
     private func checkFollowStatus() {
         guard let currentUserId = authManager.currentUser?.uid else { 

@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseFirestore
 
 struct AccountView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -13,6 +15,8 @@ struct AccountView: View {
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
     @State private var showingFriends = false
+    @State private var totalLikes = 0
+    @State private var isLoadingLikes = true
     
     var body: some View {
         NavigationView {
@@ -87,6 +91,20 @@ struct AccountView: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    
+                    VStack(spacing: 8) {
+                        if isLoadingLikes {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("\(totalLikes)")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                        Text("Likes")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 Spacer()
@@ -150,6 +168,36 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingFriends) {
                 FriendsView()
+            }
+            .onAppear {
+                loadTotalLikes()
+            }
+        }
+    }
+    
+    private func loadTotalLikes() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            isLoadingLikes = false
+            return
+        }
+        
+        let db = Firestore.firestore()
+        
+        db.collection("videos").whereField("authorId", isEqualTo: currentUserId).getDocuments { snapshot, error in
+            DispatchQueue.main.async {
+                self.isLoadingLikes = false
+                
+                if let error = error {
+                    print("❌ Error loading user videos for likes: \(error.localizedDescription)")
+                    return
+                }
+                
+                let totalLikes = snapshot?.documents.reduce(0) { total, document in
+                    let likeCount = document.data()["likeCount"] as? Int ?? 0
+                    return total + likeCount
+                } ?? 0
+                
+                self.totalLikes = totalLikes
             }
         }
     }
