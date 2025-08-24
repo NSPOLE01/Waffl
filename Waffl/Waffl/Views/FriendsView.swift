@@ -20,6 +20,7 @@ struct FriendsView: View {
     @State private var isLoadingFollowing = true
     @State private var isLoadingDiscover = true
     @State private var searchText = ""
+    @State private var refreshTrigger = UUID()
     
     var body: some View {
         NavigationView {
@@ -135,6 +136,13 @@ struct FriendsView: View {
         .onAppear {
             loadFollowingFriends()
             loadDiscoverUsers()
+        }
+        .refreshable {
+            loadFollowingFriends()
+            loadDiscoverUsers()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshFriendsView"))) { _ in
+            refreshData()
         }
     }
     
@@ -256,6 +264,11 @@ struct FriendsView: View {
         loadDiscoverUsers()
     }
     
+    private func refreshData() {
+        loadFollowingFriends()
+        loadDiscoverUsers()
+    }
+    
     // MARK: - Friend Actions
     
     private func followUser(_ user: WaffleUser) {
@@ -357,7 +370,13 @@ struct FriendRowView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Profile Picture and User Info - NavigationLink area
-            NavigationLink(destination: UserProfileView(user: user)) {
+            NavigationLink(destination: UserProfileView(user: user)
+                .onDisappear {
+                    // Refresh the parent view when returning from profile
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NotificationCenter.default.post(name: NSNotification.Name("RefreshFriendsView"), object: nil)
+                    }
+                }) {
                 HStack(spacing: 12) {
                     AsyncImage(url: URL(string: user.profileImageURL)) { image in
                         image

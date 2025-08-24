@@ -20,110 +20,144 @@ struct UserProfileView: View {
     @State private var isLoadingLikes = true
     
     var body: some View {
-        VStack(spacing: 30) {
-                // Profile Header
+        VStack(spacing: 0) {
+            // Instagram-style Profile Header
+            HStack(alignment: .top, spacing: 20) {
+                // Profile Picture (left side)
                 VStack(spacing: 16) {
-                    // Profile Picture
                     AsyncImage(url: URL(string: user.profileImageURL)) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 100, height: 100)
+                            .frame(width: 90, height: 90)
                             .clipShape(Circle())
                     } placeholder: {
                         Circle()
                             .fill(Color.orange.opacity(0.1))
-                            .frame(width: 100, height: 100)
+                            .frame(width: 90, height: 90)
                             .overlay(
                                 Image(systemName: "person.fill")
-                                    .font(.system(size: 50))
+                                    .font(.system(size: 45))
                                     .foregroundColor(.orange)
                             )
                     }
                     
-                    VStack(spacing: 4) {
-                        Text(user.displayName)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        
-                        Text(user.email)
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
+                    // Follow/Unfollow Button (underneath profile picture)
+                    if isLoadingFollowStatus {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Button(action: {
+                            if isFollowing {
+                                unfollowUser(user)
+                            } else {
+                                followUser(user)
+                            }
+                        }) {
+                            Text(isFollowing ? "Following" : "Follow")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(isFollowing ? .orange : .white)
+                                .frame(maxWidth: 90)
+                                .padding(.vertical, 8)
+                                .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
+                                )
+                        }
                     }
                 }
-                .padding(.top, 40)
                 
-                // Stats
-                HStack(spacing: 40) {
-                    // Friends - Always clickable
-                    NavigationLink(destination: UserFriendsView(user: user)) {
-                        VStack(spacing: 8) {
-                            Text("\(user.friendsCount)")
-                                .font(.system(size: 24, weight: .bold))
+                // Stats (right side) - Show locked state if not following
+                if !isLoadingFollowStatus && !isFollowing {
+                    // Locked Profile State
+                    VStack(spacing: 16) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.gray)
+                        
+                        VStack(spacing: 4) {
+                            Text("Profile locked")
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.primary)
-                            Text("Friends")
+                            
+                            Text("Follow to see content")
                                 .font(.system(size: 14))
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    VStack(spacing: 8) {
-                        Text("\(user.videosUploaded)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Videos")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        if isLoadingLikes {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        } else {
-                            Text("\(totalLikes)")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.primary)
-                        }
-                        Text("Likes")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Follow/Unfollow Button
-                if isLoadingFollowStatus {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                        .padding(.vertical, 20)
                 } else {
-                    Button(action: {
-                        if isFollowing {
-                            unfollowUser(user)
-                        } else {
-                            followUser(user)
+                    // Stats (only show when following or loading)
+                    VStack(spacing: 16) {
+                        HStack(spacing: 30) {
+                            VStack(spacing: 4) {
+                                Text("\(user.videosUploaded)")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.primary)
+                                Text("Videos")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            NavigationLink(destination: UserFriendsView(user: user)) {
+                                VStack(spacing: 4) {
+                                    Text("\(user.friendsCount)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.primary)
+                                    Text("Friends")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            VStack(spacing: 4) {
+                                if isLoadingLikes {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                } else {
+                                    Text("\(totalLikes)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.primary)
+                                }
+                                Text("Likes")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
                         }
-                    }) {
-                        Text(isFollowing ? "Following" : "Follow")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(isFollowing ? .orange : .white)
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 12)
-                            .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
-                            .cornerRadius(25)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
-                            )
+                        
+                        Spacer()
                     }
                 }
                 
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .navigationTitle(user.firstName)
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            // Name and email below the header
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(user.displayName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text(user.email)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            
+            Spacer()
+        }
+        .navigationTitle(user.firstName)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             checkFollowStatus()
             loadTotalLikes()
