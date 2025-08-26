@@ -28,22 +28,22 @@ struct UserProfileView: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 100, height: 100)
+                        .frame(width: 120, height: 120)
                         .clipShape(Circle())
                 } placeholder: {
                     Circle()
                         .fill(Color.orange.opacity(0.1))
-                        .frame(width: 100, height: 100)
+                        .frame(width: 120, height: 120)
                         .overlay(
                             Image(systemName: "person.fill")
-                                .font(.system(size: 50))
+                                .font(.system(size: 60))
                                 .foregroundColor(.orange)
                         )
                 }
                 
                 VStack(spacing: 4) {
                     Text(user.displayName)
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
                 }
             }
@@ -114,6 +114,8 @@ struct UserProfileView: View {
                 }
             }
             
+            Spacer()
+            
             // Locked Profile Message (only show when not following)
             if !isLoadingFollowStatus && !isFollowing {
                 VStack(spacing: 20) {
@@ -131,6 +133,7 @@ struct UserProfileView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                .padding(.bottom, 60)
             }
             
             Spacer()
