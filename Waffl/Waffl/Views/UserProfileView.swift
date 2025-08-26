@@ -20,133 +20,122 @@ struct UserProfileView: View {
     @State private var isLoadingLikes = true
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Instagram-style Profile Header
-            HStack(alignment: .top, spacing: 20) {
-                // Profile Picture and Follow Button (left side)
-                VStack(spacing: 20) {
-                    AsyncImage(url: URL(string: user.profileImageURL)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 90, height: 90)
-                            .clipShape(Circle())
-                    } placeholder: {
-                        Circle()
-                            .fill(Color.orange.opacity(0.1))
-                            .frame(width: 90, height: 90)
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.system(size: 45))
-                                    .foregroundColor(.orange)
-                            )
-                    }
-                    
-                    // Follow/Unfollow Button (bigger and more rounded)
-                    if isLoadingFollowStatus {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else {
-                        Button(action: {
-                            if isFollowing {
-                                unfollowUser(user)
-                            } else {
-                                followUser(user)
-                            }
-                        }) {
-                            Text(isFollowing ? "Following" : "Follow")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(isFollowing ? .orange : .white)
-                                .frame(width: 120, height: 36)
-                                .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
-                                .cornerRadius(18)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 18)
-                                        .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
-                                )
-                        }
-                    }
+        VStack(spacing: 30) {
+            // Profile Header
+            VStack(spacing: 16) {
+                // Profile Picture
+                AsyncImage(url: URL(string: user.profileImageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 100, height: 100)
+                        .clipShape(Circle())
+                } placeholder: {
+                    Circle()
+                        .fill(Color.orange.opacity(0.1))
+                        .frame(width: 100, height: 100)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 50))
+                                .foregroundColor(.orange)
+                        )
                 }
                 
-                // Name, Stats and Content (right side)
-                VStack(alignment: .leading, spacing: 16) {
-                    // Name at the top
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(user.displayName)
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // Stats (always show)
-                    HStack(spacing: 24) {
-                        VStack(spacing: 4) {
-                            Text("\(user.videosUploaded)")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.primary)
-                            Text("Videos")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        NavigationLink(destination: UserFriendsView(user: user)) {
-                            VStack(spacing: 4) {
-                                Text("\(user.friendsCount)")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.primary)
-                                Text("Friends")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        VStack(spacing: 4) {
-                            if isLoadingLikes {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            } else {
-                                Text("\(totalLikes)")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.primary)
-                            }
-                            Text("Likes")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                    }
+                VStack(spacing: 4) {
+                    Text(user.displayName)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
                 }
-                
-                Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
+            .padding(.top, 40)
             
-            // Locked Profile Message (only show when not following)
-            if !isLoadingFollowStatus && !isFollowing {
-                Spacer()
-                    .frame(maxHeight: 120)
+            // Stats
+            HStack(spacing: 40) {
+                VStack(spacing: 8) {
+                    Text("\(user.videosUploaded)")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text("Videos")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
                 
-                VStack(spacing: 24) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 90))
-                        .foregroundColor(.gray)
-                    
-                    VStack(spacing: 10) {
-                        Text("This profile is locked")
-                            .font(.system(size: 26, weight: .bold))
+                NavigationLink(destination: UserFriendsView(user: user)) {
+                    VStack(spacing: 8) {
+                        Text("\(user.friendsCount)")
+                            .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.primary)
-                        
-                        Text("Follow to see content")
-                            .font(.system(size: 20))
+                        Text("Friends")
+                            .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
                 }
+                .buttonStyle(PlainButtonStyle())
                 
-                Spacer()
-            } else {
-                Spacer()
+                VStack(spacing: 8) {
+                    if isLoadingLikes {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Text("\(totalLikes)")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                    Text("Likes")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
             }
+            
+            // Follow/Unfollow Button
+            if isLoadingFollowStatus {
+                ProgressView()
+                    .scaleEffect(1.2)
+                    .padding(.vertical, 20)
+            } else {
+                Button(action: {
+                    if isFollowing {
+                        unfollowUser(user)
+                    } else {
+                        followUser(user)
+                    }
+                }) {
+                    Text(isFollowing ? "Following" : "Follow")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isFollowing ? .orange : .white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 12)
+                        .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
+                        .cornerRadius(25)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
+                        )
+                }
+            }
+            
+            // Locked Profile Message (only show when not following)
+            if !isLoadingFollowStatus && !isFollowing {
+                VStack(spacing: 20) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    
+                    VStack(spacing: 8) {
+                        Text("This profile is locked")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Follow to see content")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            Spacer()
         }
+        .padding(.horizontal, 24)
         .navigationTitle(user.firstName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
