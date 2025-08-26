@@ -124,20 +124,20 @@ struct UserProfileView: View {
             // Locked Profile Message (only show when not following)
             if !isLoadingFollowStatus && !isFollowing {
                 Spacer()
-                    .frame(maxHeight: 60)
+                    .frame(maxHeight: 120)
                 
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 70))
+                        .font(.system(size: 90))
                         .foregroundColor(.gray)
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 10) {
                         Text("This profile is locked")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 26, weight: .bold))
                             .foregroundColor(.primary)
                         
                         Text("Follow to see content")
-                            .font(.system(size: 18))
+                            .font(.system(size: 20))
                             .foregroundColor(.secondary)
                     }
                 }
