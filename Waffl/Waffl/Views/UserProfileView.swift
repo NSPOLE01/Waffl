@@ -20,7 +20,7 @@ struct UserProfileView: View {
     @State private var isLoadingLikes = true
     
     var body: some View {
-        VStack(spacing: 30) {
+        VStack(spacing: 24) {
             // Profile Header
             VStack(spacing: 16) {
                 // Profile Picture
@@ -43,7 +43,7 @@ struct UserProfileView: View {
                 
                 VStack(spacing: 4) {
                     Text(user.displayName)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                 }
             }
@@ -51,38 +51,38 @@ struct UserProfileView: View {
             
             // Stats
             HStack(spacing: 40) {
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Text("\(user.videosUploaded)")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
                     Text("Videos")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
                 
                 NavigationLink(destination: UserFriendsView(user: user)) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         Text("\(user.friendsCount)")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.primary)
                         Text("Friends")
-                            .font(.system(size: 14))
+                            .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     if isLoadingLikes {
                         ProgressView()
-                            .scaleEffect(0.8)
+                            .scaleEffect(0.7)
                     } else {
                         Text("\(totalLikes)")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.primary)
                     }
                     Text("Likes")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
             }
