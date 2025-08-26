@@ -13,6 +13,7 @@ import FirebaseFirestore
 struct UserProfileView: View {
     let user: WaffleUser
     @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
     
     @State private var isFollowing = false
     @State private var isLoadingFollowStatus = true
@@ -21,6 +22,21 @@ struct UserProfileView: View {
     
     var body: some View {
         VStack(spacing: 24) {
+            // Back button
+            HStack {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+            }
+            .padding(.top, 10)
+            .padding(.leading, 16)
+            
             // Profile Header
             VStack(spacing: 16) {
                 // Profile Picture
@@ -47,7 +63,7 @@ struct UserProfileView: View {
                         .foregroundColor(.primary)
                 }
             }
-            .padding(.top, 40)
+            .padding(.top, 10)
             
             // Stats
             HStack(spacing: 40) {
@@ -139,8 +155,7 @@ struct UserProfileView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
-        .navigationTitle(user.firstName)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(true)
         .onAppear {
             checkFollowStatus()
             loadTotalLikes()
