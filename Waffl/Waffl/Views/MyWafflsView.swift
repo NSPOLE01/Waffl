@@ -336,7 +336,7 @@ struct MyWafflVideoCard: View {
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
     @State private var isDeleting = false
-    @State private var showingAccountView = false
+    @State private var navigateToAccount = false
     @EnvironmentObject var authManager: AuthManager
     
     let onDelete: () -> Void
@@ -355,21 +355,23 @@ struct MyWafflVideoCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Button(action: {
-                    print("🔍 Profile picture tapped for user: \(video.authorName)")
-                    showingAccountView = true
-                }) {
-                    if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
-                        AuthorAvatarView(avatarString: profileImageURL)
-                    } else {
-                        AuthorAvatarView(avatarString: "person.circle.fill")
+                NavigationLink(destination: AccountView(selectedTab: .constant(4)), isActive: $navigateToAccount) {
+                    Button(action: {
+                        print("🔍 Profile picture tapped for user: \(video.authorName)")
+                        navigateToAccount = true
+                    }) {
+                        if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
+                            AuthorAvatarView(avatarString: profileImageURL)
+                        } else {
+                            AuthorAvatarView(avatarString: "person.circle.fill")
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
+                    .contentShape(Circle())
                 }
-                .buttonStyle(PlainButtonStyle())
-                .contentShape(Circle())
                 Button(action: {
                     print("🔍 Author name tapped for user: \(video.authorName)")
-                    showingAccountView = true
+                    navigateToAccount = true
                 }) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(video.authorName)
@@ -543,10 +545,6 @@ struct MyWafflVideoCard: View {
         )
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
-        }
-        .sheet(isPresented: $showingAccountView) {
-            // Since this is the user's own video, navigate to account view
-            AccountView(selectedTab: .constant(4)) // Pass a constant binding for the account tab
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, currentUserProfile: currentUserProfile, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
