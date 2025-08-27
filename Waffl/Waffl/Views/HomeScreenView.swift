@@ -29,7 +29,7 @@ struct HomeScreenView: View {
                 .tag(2)
             
             // My Waffls Tab
-            MyWafflsView()
+            MyWafflsView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "person.crop.rectangle.stack")
                     Text("My Waffls")

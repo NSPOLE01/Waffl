@@ -11,6 +11,7 @@ import FirebaseFirestore
 import FirebaseStorage
 
 struct MyWafflsView: View {
+    @Binding var selectedTab: Int
     @EnvironmentObject var authManager: AuthManager
     @State private var videos: [WaffleVideo] = []
     @State private var isLoadingVideos = true
@@ -65,6 +66,7 @@ struct MyWafflsView: View {
                             MyWafflVideoCard(
                                 video: video, 
                                 currentUserProfile: authManager.currentUserProfile,
+                                selectedTab: $selectedTab,
                                 onDelete: {
                                     // Remove video from local array when deleted
                                     if let index = videos.firstIndex(where: { $0.id == video.id }) {
@@ -329,6 +331,7 @@ struct EmptyMyVideosView: View {
 struct MyWafflVideoCard: View {
     let video: WaffleVideo
     let currentUserProfile: WaffleUser?
+    @Binding var selectedTab: Int
     @State private var isLiked: Bool
     @State private var likeCount: Int
     @State private var viewCount: Int
@@ -336,15 +339,15 @@ struct MyWafflVideoCard: View {
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
     @State private var isDeleting = false
-    @State private var navigateToAccount = false
     @EnvironmentObject var authManager: AuthManager
     
     let onDelete: () -> Void
     let onDeleteRequest: () -> Void
     
-    init(video: WaffleVideo, currentUserProfile: WaffleUser?, onDelete: @escaping () -> Void, onDeleteRequest: @escaping () -> Void) {
+    init(video: WaffleVideo, currentUserProfile: WaffleUser?, selectedTab: Binding<Int>, onDelete: @escaping () -> Void, onDeleteRequest: @escaping () -> Void) {
         self.video = video
         self.currentUserProfile = currentUserProfile
+        self._selectedTab = selectedTab
         self.onDelete = onDelete
         self.onDeleteRequest = onDeleteRequest
         self._isLiked = State(initialValue: video.isLikedByCurrentUser)
@@ -355,23 +358,21 @@ struct MyWafflVideoCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                NavigationLink(destination: AccountView(selectedTab: .constant(4)), isActive: $navigateToAccount) {
-                    Button(action: {
-                        print("🔍 Profile picture tapped for user: \(video.authorName)")
-                        navigateToAccount = true
-                    }) {
-                        if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
-                            AuthorAvatarView(avatarString: profileImageURL)
-                        } else {
-                            AuthorAvatarView(avatarString: "person.circle.fill")
-                        }
+                Button(action: {
+                    print("🔍 Profile picture tapped for user: \(video.authorName)")
+                    selectedTab = 4 // Switch to Account tab
+                }) {
+                    if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
+                        AuthorAvatarView(avatarString: profileImageURL)
+                    } else {
+                        AuthorAvatarView(avatarString: "person.circle.fill")
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .contentShape(Circle())
                 }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Circle())
                 Button(action: {
                     print("🔍 Author name tapped for user: \(video.authorName)")
-                    navigateToAccount = true
+                    selectedTab = 4 // Switch to Account tab
                 }) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(video.authorName)
