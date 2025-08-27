@@ -336,7 +336,7 @@ struct MyWafflVideoCard: View {
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
     @State private var isDeleting = false
-    @State private var showingUserProfile = false
+    @State private var showingAccountView = false
     @EnvironmentObject var authManager: AuthManager
     
     let onDelete: () -> Void
@@ -357,7 +357,7 @@ struct MyWafflVideoCard: View {
             HStack {
                 Button(action: {
                     print("🔍 Profile picture tapped for user: \(video.authorName)")
-                    showingUserProfile = true
+                    showingAccountView = true
                 }) {
                     if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
                         AuthorAvatarView(avatarString: profileImageURL)
@@ -369,7 +369,7 @@ struct MyWafflVideoCard: View {
                 .contentShape(Circle())
                 Button(action: {
                     print("🔍 Author name tapped for user: \(video.authorName)")
-                    showingUserProfile = true
+                    showingAccountView = true
                 }) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(video.authorName)
@@ -544,20 +544,9 @@ struct MyWafflVideoCard: View {
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
         }
-        .sheet(isPresented: $showingUserProfile) {
-            // Since this is the user's own video, show their own profile
-            if let userProfile = currentUserProfile {
-                UserProfileView(user: userProfile)
-            } else {
-                // Fallback - create a temporary user profile from video data
-                UserProfileView(user: WaffleUser(
-                    id: video.authorId,
-                    email: "", // We don't have email from video data
-                    displayName: video.authorName,
-                    createdAt: video.uploadDate, // Use upload date as fallback
-                    profileImageURL: video.authorAvatar.hasPrefix("http") ? video.authorAvatar : ""
-                ))
-            }
+        .sheet(isPresented: $showingAccountView) {
+            // Since this is the user's own video, navigate to account view
+            AccountView(selectedTab: .constant(4)) // Pass a constant binding for the account tab
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, currentUserProfile: currentUserProfile, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
