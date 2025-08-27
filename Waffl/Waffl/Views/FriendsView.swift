@@ -190,12 +190,6 @@ struct FriendsView: View {
             // Get the user IDs of followed users
             let followingIds = documents.compactMap { $0.documentID }
             
-            print("🐛 DEBUG: Following collection documents:")
-            for doc in documents {
-                print("🐛   - Document ID: \(doc.documentID), Data: \(doc.data())")
-            }
-            print("🐛 DEBUG: Following IDs: \(followingIds)")
-            
             if followingIds.isEmpty {
                 DispatchQueue.main.async {
                     self.followingFriends = []
@@ -217,12 +211,6 @@ struct FriendsView: View {
                 let friends = snapshot?.documents.compactMap { document in
                     try? WaffleUser(from: document)
                 } ?? []
-                
-                print("🐛 DEBUG: Found \(friends.count) following friends:")
-                for friend in friends {
-                    print("🐛   - \(friend.displayName) (\(friend.email)) - ID: \(friend.uid)")
-                }
-                print("🐛 DEBUG: User profile friendsCount: \(authManager.currentUserProfile?.friendsCount ?? 0)")
                 
                 DispatchQueue.main.async {
                     self.followingFriends = friends

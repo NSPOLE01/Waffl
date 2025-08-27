@@ -19,6 +19,8 @@ struct UserProfileView: View {
     @State private var isLoadingFollowStatus = true
     @State private var totalLikes = 0
     @State private var isLoadingLikes = true
+    @State private var mutualFriends: [WaffleUser] = []
+    @State private var isLoadingMutuals = true
     
     var body: some View {
         VStack(spacing: 24) {
@@ -103,6 +105,34 @@ struct UserProfileView: View {
                 }
             }
             
+            // Mutual Friends Section
+            if !mutualFriends.isEmpty {
+                VStack(spacing: 8) {
+                    Text("\(mutualFriends.count) mutual friend\(mutualFriends.count == 1 ? "" : "s")")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 4) {
+                        let displayFriends = Array(mutualFriends.prefix(2))
+                        ForEach(displayFriends.indices, id: \.self) { index in
+                            let friend = displayFriends[index]
+                            if index > 0 {
+                                Text(",")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.primary)
+                            }
+                            Text(friend.displayName)
+                                .font(.system(size: 14))
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 24)
+            }
+            
             // Follow/Unfollow Button
             if isLoadingFollowStatus {
                 ProgressView()
@@ -159,9 +189,75 @@ struct UserProfileView: View {
         .onAppear {
             checkFollowStatus()
             loadTotalLikes()
+            loadMutualFriends()
         }
     }
     
+    
+    private func loadMutualFriends() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            isLoadingMutuals = false
+            return
+        }
+        
+        let db = Firestore.firestore()
+        
+        // Get current user's following list
+        db.collection("users").document(currentUserId).collection("following").getDocuments { currentSnapshot, currentError in
+            
+            if let currentError = currentError {
+                print("❌ Error loading current user following: \(currentError.localizedDescription)")
+                DispatchQueue.main.async {
+                    isLoadingMutuals = false
+                }
+                return
+            }
+            
+            let currentFollowingIds = currentSnapshot?.documents.compactMap { $0.documentID } ?? []
+            
+            // Get target user's following list
+            db.collection("users").document(user.uid).collection("following").getDocuments { targetSnapshot, targetError in
+                if let targetError = targetError {
+                    print("❌ Error loading target user following: \(targetError.localizedDescription)")
+                    DispatchQueue.main.async {
+                        isLoadingMutuals = false
+                    }
+                    return
+                }
+                
+                let targetFollowingIds = targetSnapshot?.documents.compactMap { $0.documentID } ?? []
+                
+                // Find mutual friend IDs
+                let mutualIds = Set(currentFollowingIds).intersection(Set(targetFollowingIds))
+                
+                if mutualIds.isEmpty {
+                    DispatchQueue.main.async {
+                        mutualFriends = []
+                        isLoadingMutuals = false
+                    }
+                    return
+                }
+                
+                // Fetch mutual friends' user data
+                db.collection("users").whereField("uid", in: Array(mutualIds)).getDocuments { mutualSnapshot, mutualError in
+                    DispatchQueue.main.async {
+                        isLoadingMutuals = false
+                        
+                        if let mutualError = mutualError {
+                            print("❌ Error loading mutual friends: \(mutualError.localizedDescription)")
+                            return
+                        }
+                        
+                        let mutuals = mutualSnapshot?.documents.compactMap { document in
+                            try? WaffleUser(from: document)
+                        } ?? []
+                        
+                        mutualFriends = mutuals
+                    }
+                }
+            }
+        }
+    }
     
     private func loadTotalLikes() {
         let db = Firestore.firestore()
