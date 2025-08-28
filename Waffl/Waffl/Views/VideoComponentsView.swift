@@ -143,13 +143,7 @@ struct VideoCard: View {
             VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
         }
         .fullScreenCover(isPresented: $showingUserProfile) {
-            UserProfileView(user: WaffleUser(
-                id: video.authorId,
-                email: "", // We don't have email from video data
-                displayName: video.authorName,
-                createdAt: video.uploadDate,
-                profileImageURL: video.authorAvatar.hasPrefix("http") ? video.authorAvatar : ""
-            ))
+            UserProfileLoadingView(authorId: video.authorId, authorName: video.authorName, authorAvatar: video.authorAvatar)
         }
     }
     
@@ -865,6 +859,78 @@ struct AuthorAvatarView: View {
                 Image(systemName: avatarString)
                     .font(.system(size: 32))
                     .foregroundColor(.orange)
+            }
+        }
+    }
+}
+
+struct UserProfileLoadingView: View {
+    let authorId: String
+    let authorName: String
+    let authorAvatar: String
+    
+    @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
+    @State private var user: WaffleUser?
+    @State private var isLoading = true
+    
+    var body: some View {
+        Group {
+            if isLoading {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading profile...")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(UIColor.systemBackground))
+            } else if let user = user {
+                UserProfileView(user: user)
+            } else {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 48))
+                        .foregroundColor(.orange)
+                    Text("Profile not found")
+                        .font(.system(size: 18, weight: .semibold))
+                    Button("Close") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.orange)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(UIColor.systemBackground))
+            }
+        }
+        .onAppear {
+            loadUserProfile()
+        }
+    }
+    
+    private func loadUserProfile() {
+        let db = Firestore.firestore()
+        
+        db.collection("users").whereField("uid", isEqualTo: authorId).getDocuments { snapshot, error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error {
+                    print("❌ Error loading user profile: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let document = snapshot?.documents.first else {
+                    print("❌ User profile not found for authorId: \(authorId)")
+                    return
+                }
+                
+                do {
+                    self.user = try WaffleUser(from: document)
+                } catch {
+                    print("❌ Error parsing user profile: \(error.localizedDescription)")
+                }
             }
         }
     }
