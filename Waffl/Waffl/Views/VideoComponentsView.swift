@@ -19,6 +19,7 @@ struct VideoCard: View {
     @State private var showingLikesList = false
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
+    @State private var showingUserProfile = false
     @EnvironmentObject var authManager: AuthManager
     
     init(video: WaffleVideo) {
@@ -57,8 +58,8 @@ struct VideoCard: View {
             // Video info
             HStack {
                 Button(action: {
-                    // TODO: Navigate to user profile when implemented
                     print("👤 Profile tapped for: \(video.authorName)")
+                    showingUserProfile = true
                 }) {
                     AuthorAvatarView(avatarString: video.authorAvatar)
                 }
@@ -140,6 +141,15 @@ struct VideoCard: View {
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
+        }
+        .fullScreenCover(isPresented: $showingUserProfile) {
+            UserProfileView(user: WaffleUser(
+                id: video.authorId,
+                email: "", // We don't have email from video data
+                displayName: video.authorName,
+                createdAt: video.uploadDate,
+                profileImageURL: video.authorAvatar.hasPrefix("http") ? video.authorAvatar : ""
+            ))
         }
     }
     
