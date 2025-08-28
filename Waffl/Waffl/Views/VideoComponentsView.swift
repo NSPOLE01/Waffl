@@ -52,7 +52,14 @@ struct VideoCard: View {
             
             // Video info
             HStack {
-                AuthorAvatarView(avatarString: video.authorAvatar)
+                Button(action: {
+                    // TODO: Navigate to user profile when implemented
+                    print("👤 Profile tapped for: \(video.authorName)")
+                }) {
+                    AuthorAvatarView(avatarString: video.authorAvatar)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(video.authorName)
@@ -78,6 +85,10 @@ struct VideoCard: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.secondary)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // Consume tap to prevent falling through
+                    }
                     
                     // Like section with separate buttons
                     HStack(spacing: 8) {
@@ -90,6 +101,7 @@ struct VideoCard: View {
                                 .foregroundColor(isLiked ? .red : .gray)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
                         
                         // Like count button for showing who liked
                         if likeCount > 0 {
@@ -101,11 +113,16 @@ struct VideoCard: View {
                                     .foregroundColor(.secondary)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contentShape(Rectangle())
                         }
                     }
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Consume tap to prevent falling through
+                }
             }
         }
         .padding(16)

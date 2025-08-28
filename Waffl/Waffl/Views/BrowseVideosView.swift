@@ -55,9 +55,19 @@ struct BrowseVideosView: View {
                                 StatCard(title: "Friends", value: "\(authManager.currentUserProfile?.friendsCount ?? 0)", icon: "person.2.fill")
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contentShape(RoundedRectangle(cornerRadius: 12))
                             
                             StatCard(title: "Videos", value: "\(videos.count)", icon: "video.fill")
+                                .contentShape(RoundedRectangle(cornerRadius: 12))
+                                .onTapGesture {
+                                    // Consume tap to prevent falling through
+                                }
+                            
                             StatCard(title: "Watched", value: "5", icon: "eye.fill")
+                                .contentShape(RoundedRectangle(cornerRadius: 12))
+                                .onTapGesture {
+                                    // Consume tap to prevent falling through
+                                }
                         }
                         .padding(.horizontal, 20)
                     }
