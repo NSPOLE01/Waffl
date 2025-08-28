@@ -46,6 +46,10 @@ struct BrowseVideosView: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            // Consume taps to prevent falling through to videos
+                        }
                         
                         // Quick stats
                         HStack(spacing: 20) {
@@ -88,6 +92,7 @@ struct BrowseVideosView: View {
                         ForEach(videos) { video in
                             VideoCard(video: video)
                                 .padding(.horizontal, 20)
+                                .contentShape(Rectangle())
                         }
                     }
                 }

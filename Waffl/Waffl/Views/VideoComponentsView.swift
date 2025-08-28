@@ -32,16 +32,20 @@ struct VideoCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Video thumbnail/placeholder
             ZStack {
-                Button(action: {
-                    showingVideoPlayer = true
-                }) {
-                    VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .onTapGesture(count: 2) {
-                    // Double tap to like
-                    handleDoubleTapLike()
-                }
+                VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(
+                        TapGesture(count: 2)
+                            .onEnded {
+                                handleDoubleTapLike()
+                            }
+                    )
+                    .simultaneousGesture(
+                        TapGesture()
+                            .onEnded {
+                                showingVideoPlayer = true
+                            }
+                    )
                 
                 // Heart animation overlay
                 if showHeartAnimation {
@@ -129,6 +133,8 @@ struct VideoCard: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .clipped()
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
         }
