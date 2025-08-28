@@ -52,6 +52,7 @@ enum ConfirmationAction {
 struct UserFriendsView: View {
     let user: WaffleUser
     @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
     
     @State private var userFriends: [WaffleUser] = []
     @State private var isLoadingFriends = true
@@ -61,6 +62,20 @@ struct UserFriendsView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            // Back button
+            HStack {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+            }
+            .padding(.top, 10)
+            .padding(.leading, 16)
                     if isCheckingFollowStatus {
                         VStack(spacing: 16) {
                             ProgressView()
@@ -137,8 +152,7 @@ struct UserFriendsView: View {
                     
             Spacer()
         }
-        .navigationTitle("\(user.firstName)'s Friends")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(true)
         .onAppear {
             checkIfFollowingUser()
         }

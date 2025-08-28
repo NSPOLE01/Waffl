@@ -21,6 +21,7 @@ struct UserProfileView: View {
     @State private var isLoadingLikes = true
     @State private var mutualFriends: [WaffleUser] = []
     @State private var isLoadingMutuals = true
+    @State private var showingUserFriends = false
     
     var body: some View {
         VStack(spacing: 24) {
@@ -78,7 +79,9 @@ struct UserProfileView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                NavigationLink(destination: UserFriendsView(user: user)) {
+                Button(action: {
+                    showingUserFriends = true
+                }) {
                     VStack(spacing: 6) {
                         Text("\(user.friendsCount)")
                             .font(.system(size: 20, weight: .bold))
@@ -190,6 +193,9 @@ struct UserProfileView: View {
             checkFollowStatus()
             loadTotalLikes()
             loadMutualFriends()
+        }
+        .fullScreenCover(isPresented: $showingUserFriends) {
+            UserFriendsView(user: user)
         }
     }
     
