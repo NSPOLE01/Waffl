@@ -36,7 +36,7 @@ struct BrowseVideosView: View {
                             
                             // Week indicator
                             VStack {
-                                Text("Week of")
+                                Text("Today is")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Text(getCurrentWeekString())
