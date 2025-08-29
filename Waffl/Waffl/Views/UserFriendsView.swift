@@ -358,10 +358,14 @@ struct UserFriendRowView: View {
     let isFollowing: Bool
     let onAction: () -> Void
     
+    @State private var showingUserProfile = false
+    
     var body: some View {
         HStack(spacing: 12) {
-            // Profile Picture and User Info - NavigationLink area
-            NavigationLink(destination: UserProfileView(user: user)) {
+            // Profile Picture and User Info - Button area
+            Button(action: {
+                showingUserProfile = true
+            }) {
                 HStack(spacing: 12) {
                     AsyncImage(url: URL(string: user.profileImageURL)) { image in
                         image
@@ -416,5 +420,8 @@ struct UserFriendRowView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .fullScreenCover(isPresented: $showingUserProfile) {
+            UserProfileView(user: user)
+        }
     }
 }
