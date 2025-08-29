@@ -53,12 +53,12 @@ struct UserProfileView: View {
                         .clipShape(Circle())
                 } placeholder: {
                     Circle()
-                        .fill(Color.orange.opacity(0.1))
+                        .fill(Color.purple.opacity(0.1))
                         .frame(width: 120, height: 120)
                         .overlay(
                             Image(systemName: "person.fill")
                                 .font(.system(size: 60))
-                                .foregroundColor(.orange)
+                                .foregroundColor(.purple)
                         )
                 }
                 
@@ -153,14 +153,14 @@ struct UserProfileView: View {
                 }) {
                     Text(isFollowing ? "Following" : "Follow")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(isFollowing ? .orange : .white)
+                        .foregroundColor(isFollowing ? .purple : .white)
                         .padding(.horizontal, 32)
                         .padding(.vertical, 12)
-                        .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
+                        .background(isFollowing ? Color.purple.opacity(0.1) : Color.purple)
                         .cornerRadius(25)
                         .overlay(
                             RoundedRectangle(cornerRadius: 25)
-                                .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
+                                .stroke(Color.purple, lineWidth: isFollowing ? 1 : 0)
                         )
                 }
             }

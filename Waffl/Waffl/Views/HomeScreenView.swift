@@ -44,7 +44,7 @@ struct HomeScreenView: View {
                 }
                 .tag(4)
         }
-        .accentColor(.orange)
+        .accentColor(.purple)
         .navigationBarHidden(true)
     }
 }

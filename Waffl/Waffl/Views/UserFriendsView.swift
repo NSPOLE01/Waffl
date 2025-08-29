@@ -90,7 +90,7 @@ struct UserFriendsView: View {
                         VStack(spacing: 20) {
                             Image(systemName: "lock.circle")
                                 .font(.system(size: 60))
-                                .foregroundColor(.orange)
+                                .foregroundColor(.purple)
                             
                             VStack(spacing: 8) {
                                 Text("Friends List Private")
@@ -375,12 +375,12 @@ struct UserFriendRowView: View {
                             .clipShape(Circle())
                     } placeholder: {
                         Circle()
-                            .fill(Color.orange.opacity(0.1))
+                            .fill(Color.purple.opacity(0.1))
                             .frame(width: 50, height: 50)
                             .overlay(
                                 Image(systemName: "person.fill")
                                     .font(.system(size: 24))
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.purple)
                             )
                     }
                     
@@ -404,14 +404,14 @@ struct UserFriendRowView: View {
             Button(action: onAction) {
                 Text(isFollowing ? "Following" : "Follow")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isFollowing ? .orange : .white)
+                    .foregroundColor(isFollowing ? .purple : .white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(isFollowing ? Color.orange.opacity(0.1) : Color.orange)
+                    .background(isFollowing ? Color.purple.opacity(0.1) : Color.purple)
                     .cornerRadius(20)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.orange, lineWidth: isFollowing ? 1 : 0)
+                            .stroke(Color.purple, lineWidth: isFollowing ? 1 : 0)
                     )
             }
         }

@@ -91,7 +91,7 @@ struct CameraView: View {
                             }
                             
                             ProgressView(value: min(cameraManager.recordingDuration / 60.0, 1.0))
-                                .progressViewStyle(LinearProgressViewStyle(tint: cameraManager.recordingDuration >= 60 ? .red : .orange))
+                                .progressViewStyle(LinearProgressViewStyle(tint: cameraManager.recordingDuration >= 60 ? .red : .purple))
                                 .scaleEffect(x: 1, y: 2, anchor: .center)
                         }
                         .padding(.horizontal, 40)
@@ -158,7 +158,7 @@ struct CameraView: View {
                             UIApplication.shared.open(settingsURL)
                         }
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
                     .padding()
                     .background(Color.white)
                     .cornerRadius(12)

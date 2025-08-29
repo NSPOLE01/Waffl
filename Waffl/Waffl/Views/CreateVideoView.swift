@@ -42,7 +42,7 @@ struct CreateVideoView: View {
                 VStack(spacing: 16) {
                     ZStack {
                         Circle()
-                            .fill(Color.orange.opacity(0.1))
+                            .fill(Color.purple.opacity(0.1))
                             .frame(width: 120, height: 120)
                         
                         if let videoURL = recordedVideoURL {
@@ -52,7 +52,7 @@ struct CreateVideoView: View {
                         } else {
                             Image(systemName: "video.circle.fill")
                                 .font(.system(size: 60))
-                                .foregroundColor(.orange)
+                                .foregroundColor(.purple)
                         }
                     }
                     
@@ -108,7 +108,7 @@ struct CreateVideoView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(Color.orange)
+                            .background(Color.purple)
                             .cornerRadius(12)
                         }
                     } else {
@@ -116,7 +116,7 @@ struct CreateVideoView: View {
                             if isUploading {
                                 VStack(spacing: 8) {
                                     ProgressView(value: uploadProgress)
-                                        .progressViewStyle(LinearProgressViewStyle(tint: .orange))
+                                        .progressViewStyle(LinearProgressViewStyle(tint: .purple))
                                     
                                     Text("Uploading... \(Int(uploadProgress * 100))%")
                                         .font(.system(size: 14))
@@ -145,7 +145,7 @@ struct CreateVideoView: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 54)
-                                    .background(Color.orange)
+                                    .background(Color.purple)
                                     .cornerRadius(12)
                                 }
                             }
@@ -157,7 +157,7 @@ struct CreateVideoView: View {
                                 }) {
                                     Text("Record Again")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.purple)
                                 }
                             } else if showingSuccessMessage {
                                 Button(action: {
@@ -166,7 +166,7 @@ struct CreateVideoView: View {
                                 }) {
                                     Text("Record New Video")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.purple)
                                 }
                             }
                         }

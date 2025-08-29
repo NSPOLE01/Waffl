@@ -32,7 +32,7 @@ struct SignInView: View {
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.orange)
+                            .foregroundColor(.purple)
                     }
                     Spacer()
                 }
@@ -259,7 +259,7 @@ struct SignInFormView: View {
                 Button("Forgot Password?") {
                 }
                 .font(.system(size: 14))
-                .foregroundColor(.orange)
+                .foregroundColor(.purple)
             }
         }
     }
@@ -286,7 +286,7 @@ struct SignInButtonView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Color.orange)
+            .background(Color.purple)
             .cornerRadius(12)
         }
         .disabled(email.isEmpty || password.isEmpty || isLoading)
@@ -305,7 +305,7 @@ struct SignUpLinkView: View {
                 NotificationCenter.default.post(name: .navigateToSignUp, object: nil)
             }
             .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.orange)
+            .foregroundColor(.purple)
         }
     }
 }
@@ -383,7 +383,7 @@ struct CreateAccountPromptView: View {
             // Icon
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 60))
-                .foregroundColor(.orange)
+                .foregroundColor(.purple)
             
             VStack(spacing: 12) {
                 Text("Account Not Found")
@@ -406,7 +406,7 @@ struct CreateAccountPromptView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(Color.orange)
+                        .background(Color.purple)
                         .cornerRadius(12)
                 }
                 

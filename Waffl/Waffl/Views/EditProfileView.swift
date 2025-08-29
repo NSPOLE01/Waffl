@@ -53,7 +53,7 @@ struct EditProfileView: View {
                             }) {
                                 ZStack {
                                     Circle()
-                                        .fill(Color.orange.opacity(0.1))
+                                        .fill(Color.purple.opacity(0.1))
                                         .frame(width: 120, height: 120)
                                     
                                     if let selectedPhotoData = selectedPhotoData,
@@ -74,12 +74,12 @@ struct EditProfileView: View {
                                         } placeholder: {
                                             Image(systemName: "person.fill")
                                                 .font(.system(size: 60))
-                                                .foregroundColor(.orange)
+                                                .foregroundColor(.purple)
                                         }
                                     } else {
                                         Image(systemName: "person.fill")
                                             .font(.system(size: 60))
-                                            .foregroundColor(.orange)
+                                            .foregroundColor(.purple)
                                     }
                                     
                                     // Camera overlay
@@ -88,7 +88,7 @@ struct EditProfileView: View {
                                         HStack {
                                             Spacer()
                                             Circle()
-                                                .fill(Color.orange)
+                                                .fill(Color.purple)
                                                 .frame(width: 32, height: 32)
                                                 .overlay(
                                                     Image(systemName: "camera.fill")
@@ -194,7 +194,7 @@ struct EditProfileView: View {
                     Button("Cancel") {
                         presentationMode.wrappedValue.dismiss()
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
                 }
             }
         }

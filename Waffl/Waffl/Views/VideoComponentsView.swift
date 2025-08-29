@@ -552,7 +552,7 @@ struct LikeUserRow: View {
                     .foregroundColor(isFollowing ? .red : .white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
-                    .background(isFollowing ? Color.clear : Color.orange)
+                    .background(isFollowing ? Color.clear : Color.purple)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(isFollowing ? Color.red : Color.clear, lineWidth: 1)
@@ -580,7 +580,7 @@ struct StatCard: View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(.orange)
+                .foregroundColor(.purple)
             
             Text(value)
                 .font(.system(size: 18, weight: .bold))
@@ -850,7 +850,7 @@ struct AuthorAvatarView: View {
                 } placeholder: {
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.purple)
                 }
                 .frame(width: 32, height: 32)
                 .clipShape(Circle())
@@ -858,7 +858,7 @@ struct AuthorAvatarView: View {
                 // It's a system icon name
                 Image(systemName: avatarString)
                     .font(.system(size: 32))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
             }
         }
     }
@@ -892,13 +892,13 @@ struct UserProfileLoadingView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 48))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.purple)
                     Text("Profile not found")
                         .font(.system(size: 18, weight: .semibold))
                     Button("Close") {
                         presentationMode.wrappedValue.dismiss()
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(UIColor.systemBackground))

@@ -26,7 +26,7 @@ struct AccountView: View {
                     // Profile Picture
                     ZStack {
                         Circle()
-                            .fill(Color.orange.opacity(0.1))
+                            .fill(Color.purple.opacity(0.1))
                             .frame(width: 100, height: 100)
                         
                         if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
@@ -41,12 +41,12 @@ struct AccountView: View {
                             } placeholder: {
                                 Image(systemName: "person.fill")
                                     .font(.system(size: 50))
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.purple)
                             }
                         } else {
                             Image(systemName: "person.fill")
                                 .font(.system(size: 50))
-                                .foregroundColor(.orange)
+                                .foregroundColor(.purple)
                         }
                     }
                     

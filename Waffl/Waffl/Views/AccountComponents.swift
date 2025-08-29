@@ -18,7 +18,7 @@ struct AccountMenuButton: View {
             HStack {
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
                 
                 Text(title)
                     .font(.system(size: 16, weight: .medium))

@@ -18,7 +18,7 @@ struct TermsAndPrivacyView: View {
                 Button("Terms of Service") {
                 }
                 .font(.caption)
-                .foregroundColor(.orange)
+                .foregroundColor(.purple)
                 
                 Text("and")
                     .font(.caption)
@@ -27,7 +27,7 @@ struct TermsAndPrivacyView: View {
                 Button("Privacy Policy") {
                 }
                 .font(.caption)
-                .foregroundColor(.orange)
+                .foregroundColor(.purple)
             }
         }
     }

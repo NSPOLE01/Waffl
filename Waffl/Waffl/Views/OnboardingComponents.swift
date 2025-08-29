@@ -11,14 +11,14 @@ struct AppLogoView: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.orange)
+                .fill(Color.purple)
                 .frame(width: 80, height: 80)
             
             Image(systemName: "video.fill")
                 .font(.system(size: 35))
                 .foregroundColor(.white)
         }
-        .shadow(color: Color.orange.opacity(0.3), radius: 10, x: 0, y: 5)
+        .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 5)
     }
 }
 
@@ -29,12 +29,12 @@ struct FeatureCard: View {
         VStack(spacing: 20) {
             ZStack {
                 Circle()
-                    .fill(Color.orange.opacity(0.1))
+                    .fill(Color.purple.opacity(0.1))
                     .frame(width: 80, height: 80)
                 
                 Image(systemName: feature.icon)
                     .font(.system(size: 35))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
             }
             
             VStack(spacing: 12) {
@@ -61,7 +61,7 @@ struct PageIndicatorView: View {
         HStack(spacing: 8) {
             ForEach(0..<totalPages, id: \.self) { index in
                 Circle()
-                    .fill(currentPage == index ? Color.orange : Color.gray.opacity(0.4))
+                    .fill(currentPage == index ? Color.purple : Color.gray.opacity(0.4))
                     .frame(width: 8, height: 8)
                     .scaleEffect(currentPage == index ? 1.2 : 1.0)
                     .animation(.easeInOut(duration: 0.2), value: currentPage)
@@ -84,7 +84,7 @@ struct OnboardingButtonsView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.orange)
+                    .background(Color.purple)
                     .cornerRadius(12)
             }
             
@@ -93,13 +93,13 @@ struct OnboardingButtonsView: View {
             }) {
                 Text("Sign In")
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.purple)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
                     .background(Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.orange, lineWidth: 2)
+                            .stroke(Color.purple, lineWidth: 2)
                     )
             }
             

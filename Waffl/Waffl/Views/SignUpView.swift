@@ -35,7 +35,7 @@ struct SignUpView: View {
                         }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.orange)
+                                .foregroundColor(.purple)
                         }
                         Spacer()
                     }
@@ -502,7 +502,7 @@ struct SignUpButtonView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Color.orange)
+            .background(Color.purple)
             .cornerRadius(12)
         }
         .disabled(!isFormValid || isLoading)
@@ -521,7 +521,7 @@ struct SignInLinkView: View {
                 NotificationCenter.default.post(name: .navigateToSignIn, object: nil)
             }
             .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.orange)
+            .foregroundColor(.purple)
         }
     }
 }

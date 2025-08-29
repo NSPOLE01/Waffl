@@ -41,7 +41,7 @@ struct BrowseVideosView: View {
                                     .foregroundColor(.secondary)
                                 Text(getCurrentWeekString())
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.purple)
                             }
                         }
                         .padding(.horizontal, 20)
