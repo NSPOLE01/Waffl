@@ -19,6 +19,8 @@ struct CreateVideoView: View {
     @State private var isUploading = false
     @State private var uploadProgress: Double = 0.0
     @State private var showingSuccessMessage = false
+    @State private var hasPostedToday = false
+    @State private var isCheckingDailyLimit = true
     
     var body: some View {
         NavigationView {
@@ -69,7 +71,32 @@ struct CreateVideoView: View {
                 
                 // Action buttons
                 VStack(spacing: 16) {
-                    if recordedVideoURL == nil {
+                    if isCheckingDailyLimit {
+                        VStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Checking today's posts...")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 20)
+                    } else if hasPostedToday {
+                        VStack(spacing: 16) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.green)
+                            
+                            Text("You've already shared today!")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            Text("Come back tomorrow to share another video")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.vertical, 20)
+                    } else if recordedVideoURL == nil {
                         Button(action: {
                             showingCamera = true
                         }) {
@@ -153,6 +180,44 @@ struct CreateVideoView: View {
         .sheet(isPresented: $showingCamera) {
             CameraView(videoURL: $recordedVideoURL)
         }
+        .onAppear {
+            checkDailyLimit()
+        }
+    }
+    
+    private func checkDailyLimit() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found")
+            isCheckingDailyLimit = false
+            return
+        }
+        
+        let db = Firestore.firestore()
+        let calendar = Calendar.current
+        let today = Date()
+        let startOfDay = calendar.startOfDay(for: today)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        // Check if user has already posted a video today
+        db.collection("videos")
+            .whereField("authorId", isEqualTo: currentUserId)
+            .whereField("uploadDate", isGreaterThanOrEqualTo: Timestamp(date: startOfDay))
+            .whereField("uploadDate", isLessThan: Timestamp(date: endOfDay))
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isCheckingDailyLimit = false
+                    
+                    if let error = error {
+                        print("❌ Error checking daily limit: \(error.localizedDescription)")
+                        // Allow recording on error (fail open)
+                        self.hasPostedToday = false
+                        return
+                    }
+                    
+                    let todaysVideos = snapshot?.documents.count ?? 0
+                    self.hasPostedToday = todaysVideos >= 1
+                }
+            }
     }
     
     private func uploadVideo() {
@@ -251,6 +316,7 @@ struct CreateVideoView: View {
                 } else {
                     print("✅ Video saved successfully!")
                     self.showingSuccessMessage = true
+                    self.hasPostedToday = true
                     
                     // Update user's video count
                     self.updateUserVideoCount()
