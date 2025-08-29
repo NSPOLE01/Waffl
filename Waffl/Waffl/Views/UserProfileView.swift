@@ -24,7 +24,7 @@ struct UserProfileView: View {
     @State private var showingUserFriends = false
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             // Back button
             HStack {
                 Button(action: {
@@ -39,6 +39,8 @@ struct UserProfileView: View {
             }
             .padding(.top, 10)
             .padding(.leading, 16)
+            
+            VStack(spacing: 24) {
             
             // Profile Header
             VStack(spacing: 16) {
@@ -186,8 +188,9 @@ struct UserProfileView: View {
             }
             
             Spacer()
+            }
+            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
         .navigationBarHidden(true)
         .onAppear {
             checkFollowStatus()
