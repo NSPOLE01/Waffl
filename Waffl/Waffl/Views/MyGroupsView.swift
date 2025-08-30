@@ -160,7 +160,7 @@ struct CreateGroupView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 10)
                         .padding(.top, 10)
                     }
                 }
@@ -285,18 +285,15 @@ struct FriendSelectionRow: View {
                     Text(friend.displayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
-                    
-                    Text(friend.email)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
