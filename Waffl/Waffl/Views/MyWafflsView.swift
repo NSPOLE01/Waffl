@@ -360,7 +360,7 @@ struct MyWafflVideoCard: View {
             HStack {
                 Button(action: {
                     print("🔍 Profile picture tapped for user: \(video.authorName)")
-                    selectedTab = 4 // Switch to Account tab
+                    selectedTab = 5 // Switch to Account tab
                 }) {
                     if let profileImageURL = currentUserProfile?.profileImageURL, !profileImageURL.isEmpty {
                         AuthorAvatarView(avatarString: profileImageURL)
@@ -372,7 +372,7 @@ struct MyWafflVideoCard: View {
                 .contentShape(Circle())
                 Button(action: {
                     print("🔍 Author name tapped for user: \(video.authorName)")
-                    selectedTab = 4 // Switch to Account tab
+                    selectedTab = 5 // Switch to Account tab
                 }) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(video.authorName)

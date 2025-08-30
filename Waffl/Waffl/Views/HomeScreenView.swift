@@ -20,13 +20,21 @@ struct HomeScreenView: View {
                 }
                 .tag(1)
             
+            // My Groups Tab
+            MyGroupsView()
+                .tabItem {
+                    Image(systemName: "person.3.fill")
+                    Text("My Groups")
+                }
+                .tag(2)
+            
             // Create Video Tab
             CreateVideoView()
                 .tabItem {
                     Image(systemName: "plus.circle.fill")
                     Text("Create Video")
                 }
-                .tag(2)
+                .tag(3)
             
             // My Waffls Tab
             MyWafflsView(selectedTab: $selectedTab)
@@ -34,7 +42,7 @@ struct HomeScreenView: View {
                     Image(systemName: "person.crop.rectangle.stack")
                     Text("My Waffls")
                 }
-                .tag(3)
+                .tag(4)
             
             // Account Tab
             AccountView(selectedTab: $selectedTab)
@@ -42,7 +50,7 @@ struct HomeScreenView: View {
                     Image(systemName: "person.circle.fill")
                     Text("Account")
                 }
-                .tag(4)
+                .tag(5)
         }
         .accentColor(.purple)
         .navigationBarHidden(true)
