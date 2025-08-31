@@ -21,7 +21,8 @@ struct AccountView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
+            ScrollView {
+                VStack(spacing: 30) {
                 // Profile Header
                 VStack(spacing: 16) {
                     // Profile Picture
@@ -108,8 +109,6 @@ struct AccountView: View {
                     }
                 }
                 
-                Spacer()
-                
                 // Menu Options
                 VStack(spacing: 16) {
                     AccountMenuButton(title: "My Waffls", icon: "person.crop.rectangle.stack") {
@@ -157,8 +156,9 @@ struct AccountView: View {
                     }
                 }
                 .padding(.bottom, 40)
+                }
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 24)
             .navigationBarHidden(true)
             .alert("Sign Out", isPresented: $showingSignOut) {
                 Button("Cancel", role: .cancel) { }
@@ -169,7 +169,9 @@ struct AccountView: View {
                 Text("Are you sure you want to sign out?")
             }
             .fullScreenCover(isPresented: $showingMyWaffls) {
-                MyWafflsView(selectedTab: $selectedTab)
+                MyWafflsView(selectedTab: $selectedTab) {
+                    showingMyWaffls = false
+                }
             }
             .fullScreenCover(isPresented: $showingEditProfile) {
                 EditProfileView()

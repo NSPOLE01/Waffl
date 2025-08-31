@@ -17,6 +17,15 @@ struct MyWafflsView: View {
     @State private var isLoadingVideos = true
     @State private var videoToDelete: WaffleVideo?
     @State private var showSuccessAlert = false
+    @Environment(\.presentationMode) var presentationMode
+    
+    // Optional binding for dismissal when presented as sheet/fullScreenCover
+    var onDismiss: (() -> Void)?
+    
+    init(selectedTab: Binding<Int>, onDismiss: (() -> Void)? = nil) {
+        self._selectedTab = selectedTab
+        self.onDismiss = onDismiss
+    }
     
     var body: some View {
         NavigationView {
@@ -84,7 +93,32 @@ struct MyWafflsView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .navigationBarHidden(onDismiss == nil)
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(false)
+            .toolbar {
+                if onDismiss != nil {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            onDismiss?()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 16, weight: .medium))
+                                Text("Back")
+                                    .font(.system(size: 17))
+                            }
+                            .foregroundColor(.purple)
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .principal) {
+                        Text("My Waffls")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
             .onAppear {
                 loadMyVideos()
             }
