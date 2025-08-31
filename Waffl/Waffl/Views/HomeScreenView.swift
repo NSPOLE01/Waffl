@@ -36,21 +36,13 @@ struct HomeScreenView: View {
                 }
                 .tag(3)
             
-            // My Waffls Tab
-            MyWafflsView(selectedTab: $selectedTab)
-                .tabItem {
-                    Image(systemName: "person.crop.rectangle.stack")
-                    Text("My Waffls")
-                }
-                .tag(4)
-            
             // Account Tab
             AccountView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "person.circle.fill")
                     Text("Account")
                 }
-                .tag(5)
+                .tag(4)
         }
         .accentColor(.purple)
         .navigationBarHidden(true)

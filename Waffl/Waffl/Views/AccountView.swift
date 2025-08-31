@@ -15,6 +15,7 @@ struct AccountView: View {
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
     @State private var showingFriends = false
+    @State private var showingMyWaffls = false
     @State private var totalLikes = 0
     @State private var isLoadingLikes = true
     
@@ -79,7 +80,7 @@ struct AccountView: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Button(action: {
-                        selectedTab = 3 // Switch to MyWaffls tab
+                        showingMyWaffls = true
                     }) {
                         VStack(spacing: 8) {
                             Text("\(authManager.currentUserProfile?.videosUploaded ?? 0)")
@@ -111,6 +112,10 @@ struct AccountView: View {
                 
                 // Menu Options
                 VStack(spacing: 16) {
+                    AccountMenuButton(title: "My Waffls", icon: "person.crop.rectangle.stack") {
+                        showingMyWaffls = true
+                    }
+                    
                     AccountMenuButton(title: "Edit Profile", icon: "person.circle") {
                         showingEditProfile = true
                     }
@@ -162,6 +167,9 @@ struct AccountView: View {
                 }
             } message: {
                 Text("Are you sure you want to sign out?")
+            }
+            .fullScreenCover(isPresented: $showingMyWaffls) {
+                MyWafflsView(selectedTab: $selectedTab)
             }
             .fullScreenCover(isPresented: $showingEditProfile) {
                 EditProfileView()
