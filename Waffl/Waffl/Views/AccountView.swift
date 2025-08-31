@@ -15,6 +15,7 @@ struct AccountView: View {
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
     @State private var showingMyWaffls = false
+    @State private var showingFriends = false
     @State private var totalLikes = 0
     @State private var isLoadingLikes = true
     
@@ -65,14 +66,19 @@ struct AccountView: View {
                 
                 // Stats
                 HStack(spacing: 40) {
-                    VStack(spacing: 8) {
-                        Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("Friends")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                    Button(action: {
+                        showingFriends = true
+                    }) {
+                        VStack(spacing: 8) {
+                            Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Friends")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     Button(action: {
                         showingMyWaffls = true
@@ -175,6 +181,9 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingEditProfile) {
                 EditProfileView()
+            }
+            .fullScreenCover(isPresented: $showingFriends) {
+                FriendsView()
             }
         }
     }

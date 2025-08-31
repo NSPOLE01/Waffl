@@ -38,29 +38,45 @@ struct CreateVideoView: View {
                 }
                 .padding(.top, 40)
                 
+                Spacer()
+                
                 // Recording status
                 VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.purple.opacity(0.1))
-                            .frame(width: 120, height: 120)
+                    if hasPostedToday {
+                        // Show checkmark and text when user has already posted today
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.green)
                         
-                        if let videoURL = recordedVideoURL {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.green)
-                        } else {
-                            Image(systemName: "video.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.purple)
-                        }
-                    }
-                    
-                    if recordedVideoURL != nil {
+                        Text("You've already shared today!")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Come back tomorrow to share another video")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    } else if let videoURL = recordedVideoURL {
+                        // Show only checkmark and success text when video is recorded
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.green)
+                        
                         Text("Video recorded successfully!")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.green)
                     } else {
+                        // Show video icon and "no video" text when no video is recorded
+                        ZStack {
+                            Circle()
+                                .fill(Color.purple.opacity(0.1))
+                                .frame(width: 120, height: 120)
+                            
+                            Image(systemName: "video.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.purple)
+                        }
+                        
                         Text("No video recorded yet")
                             .font(.system(size: 16))
                             .foregroundColor(.secondary)
@@ -81,21 +97,8 @@ struct CreateVideoView: View {
                         }
                         .padding(.vertical, 20)
                     } else if hasPostedToday {
-                        VStack(spacing: 16) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.green)
-                            
-                            Text("You've already shared today!")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Text("Come back tomorrow to share another video")
-                                .font(.system(size: 16))
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.vertical, 20)
+                        // No action buttons needed when user has already posted today
+                        Spacer().frame(height: 0)
                     } else if recordedVideoURL == nil {
                         Button(action: {
                             showingCamera = true
