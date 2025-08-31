@@ -102,13 +102,9 @@ struct MyWafflsView: View {
                         Button(action: {
                             onDismiss?()
                         }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 16, weight: .medium))
-                                Text("Back")
-                                    .font(.system(size: 17))
-                            }
-                            .foregroundColor(.purple)
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.purple)
                         }
                     }
                     

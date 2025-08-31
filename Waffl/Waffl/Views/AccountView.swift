@@ -14,7 +14,6 @@ struct AccountView: View {
     @Binding var selectedTab: Int
     @State private var showingSignOut = false
     @State private var showingEditProfile = false
-    @State private var showingFriends = false
     @State private var showingMyWaffls = false
     @State private var totalLikes = 0
     @State private var isLoadingLikes = true
@@ -66,19 +65,14 @@ struct AccountView: View {
                 
                 // Stats
                 HStack(spacing: 40) {
-                    Button(action: {
-                        showingFriends = true
-                    }) {
-                        VStack(spacing: 8) {
-                            Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.primary)
-                            Text("Friends")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                        }
+                    VStack(spacing: 8) {
+                        Text("\(authManager.currentUserProfile?.friendsCount ?? 0)")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.primary)
+                        Text("Friends")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
                     Button(action: {
                         showingMyWaffls = true
@@ -119,10 +113,6 @@ struct AccountView: View {
                         showingEditProfile = true
                     }
                     
-                    AccountMenuButton(title: "Friends", icon: "person.2") {
-                        showingFriends = true
-                    }
-                    
                     AccountMenuButton(title: "Settings", icon: "gear") {
                         // TODO: Navigate to settings
                     }
@@ -160,6 +150,16 @@ struct AccountView: View {
                 .padding(.horizontal, 24)
             }
             .navigationBarHidden(true)
+            .onAppear {
+                // Configure navigation bar appearance to remove grey background
+                let appearance = UINavigationBarAppearance()
+                appearance.configureWithTransparentBackground()
+                UINavigationBar.appearance().standardAppearance = appearance
+                UINavigationBar.appearance().scrollEdgeAppearance = appearance
+                UINavigationBar.appearance().compactAppearance = appearance
+                
+                loadTotalLikes()
+            }
             .alert("Sign Out", isPresented: $showingSignOut) {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
@@ -175,12 +175,6 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingEditProfile) {
                 EditProfileView()
-            }
-            .fullScreenCover(isPresented: $showingFriends) {
-                FriendsView()
-            }
-            .onAppear {
-                loadTotalLikes()
             }
         }
     }
