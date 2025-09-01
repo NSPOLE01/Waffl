@@ -23,9 +23,7 @@ struct AccountView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 30) {
-                // Profile Header
                 VStack(spacing: 16) {
-                    // Profile Picture
                     ZStack {
                         Circle()
                             .fill(Color.purple.opacity(0.1))
@@ -33,7 +31,6 @@ struct AccountView: View {
                         
                         if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
                            !profileImageURL.isEmpty {
-                            // TODO: Load profile image from URL
                             AsyncImage(url: URL(string: profileImageURL)) { image in
                                 image
                                     .resizable()
@@ -157,7 +154,6 @@ struct AccountView: View {
             }
             .navigationBarHidden(true)
             .onAppear {
-                // Configure navigation bar appearance to remove grey background
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithTransparentBackground()
                 UINavigationBar.appearance().standardAppearance = appearance
