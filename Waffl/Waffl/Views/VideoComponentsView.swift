@@ -298,23 +298,28 @@ struct VideoCard: View {
 // MARK: - Empty Videos View
 struct EmptyVideosView: View {
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "video.slash")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
+        VStack {
+            Spacer()
             
-            VStack(spacing: 8) {
-                Text("No videos yet")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.primary)
+            VStack(spacing: 20) {
+                Image(systemName: "video.slash")
+                    .font(.system(size: 60))
+                    .foregroundColor(.purple)
                 
-                Text("Be the first to share your week!\nTap the + button to get started.")
-                    .font(.system(size: 16))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 8) {
+                    Text("No videos yet")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text("Be the first to share your week!\nTap the + button to get started.")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
+            
+            Spacer()
         }
-        .padding(.vertical, 60)
     }
 }
 
