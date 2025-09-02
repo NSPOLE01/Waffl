@@ -21,6 +21,8 @@ struct WaffleUser: Codable, Identifiable, Hashable {
     let friendsCount: Int
     let weeksParticipated: Int
     let profileImageURL: String
+    let currentStreak: Int
+    let lastPostDate: Date?
     
     // Computed properties
     var fullName: String {
@@ -38,7 +40,7 @@ struct WaffleUser: Codable, Identifiable, Hashable {
     }
     
     // Manual initializer for creating WaffleUser instances
-    init(id: String, uid: String? = nil, firstName: String = "", lastName: String = "", email: String, displayName: String, createdAt: Date = Date(), updatedAt: Date = Date(), videosUploaded: Int = 0, friendsCount: Int = 0, weeksParticipated: Int = 0, profileImageURL: String = "") {
+    init(id: String, uid: String? = nil, firstName: String = "", lastName: String = "", email: String, displayName: String, createdAt: Date = Date(), updatedAt: Date = Date(), videosUploaded: Int = 0, friendsCount: Int = 0, weeksParticipated: Int = 0, profileImageURL: String = "", currentStreak: Int = 0, lastPostDate: Date? = nil) {
         self.id = id
         self.uid = uid ?? id
         self.firstName = firstName
@@ -51,6 +53,8 @@ struct WaffleUser: Codable, Identifiable, Hashable {
         self.friendsCount = friendsCount
         self.weeksParticipated = weeksParticipated
         self.profileImageURL = profileImageURL
+        self.currentStreak = currentStreak
+        self.lastPostDate = lastPostDate
     }
     
     // Initialize from Firestore document
@@ -79,11 +83,19 @@ struct WaffleUser: Codable, Identifiable, Hashable {
         self.friendsCount = data?["friendsCount"] as? Int ?? 0
         self.weeksParticipated = data?["weeksParticipated"] as? Int ?? 0
         self.profileImageURL = data?["profileImageURL"] as? String ?? ""
+        self.currentStreak = data?["currentStreak"] as? Int ?? 0
+        
+        // Handle lastPostDate (can be nil)
+        if let lastPostTimestamp = data?["lastPostDate"] as? Timestamp {
+            self.lastPostDate = lastPostTimestamp.dateValue()
+        } else {
+            self.lastPostDate = nil
+        }
     }
     
     // Convert to dictionary for Firestore
     func toDictionary() -> [String: Any] {
-        return [
+        var dict: [String: Any] = [
             "uid": uid,
             "firstName": firstName,
             "lastName": lastName,
@@ -94,7 +106,15 @@ struct WaffleUser: Codable, Identifiable, Hashable {
             "videosUploaded": videosUploaded,
             "friendsCount": friendsCount,
             "weeksParticipated": weeksParticipated,
-            "profileImageURL": profileImageURL
+            "profileImageURL": profileImageURL,
+            "currentStreak": currentStreak
         ]
+        
+        // Only include lastPostDate if it's not nil
+        if let lastPostDate = lastPostDate {
+            dict["lastPostDate"] = Timestamp(date: lastPostDate)
+        }
+        
+        return dict
     }
 }

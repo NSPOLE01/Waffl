@@ -67,7 +67,7 @@ struct BrowseVideosView: View {
                                     // Consume tap to prevent falling through
                                 }
                             
-                            StatCard(title: "Watched", value: "5", icon: "eye.fill")
+                            StatCard(title: "Streak", value: "\(authManager.currentUserProfile?.currentStreak ?? 0)", icon: "flame.fill")
                                 .contentShape(RoundedRectangle(cornerRadius: 12))
                                 .onTapGesture {
                                     // Consume tap to prevent falling through

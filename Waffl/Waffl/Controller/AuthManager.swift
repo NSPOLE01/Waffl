@@ -64,6 +64,9 @@ class AuthManager: ObservableObject {
                 do {
                     let userProfile = try WaffleUser(from: document)
                     self?.currentUserProfile = userProfile
+                    
+                    // Check and update streaks on profile load
+                    self?.checkAndUpdateStreaks()
                 } catch {
                     print("Error parsing user profile: \(error.localizedDescription)")
                 }
@@ -147,6 +150,69 @@ class AuthManager: ObservableObject {
             if error == nil {
                 // Refresh the user profile
                 self?.fetchUserProfile(uid: uid)
+            }
+        }
+    }
+    
+    // MARK: - Streak Management
+    
+    func updateStreakForVideoPost() {
+        guard let uid = currentUser?.uid,
+              let currentProfile = currentUserProfile else { return }
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        var newStreak = 1
+        
+        // Calculate new streak based on last post date
+        if let lastPostDate = currentProfile.lastPostDate {
+            let lastPostDay = Calendar.current.startOfDay(for: lastPostDate)
+            let daysDifference = Calendar.current.dateComponents([.day], from: lastPostDay, to: today).day ?? 0
+            
+            if daysDifference == 1 {
+                // Posted yesterday, increment streak
+                newStreak = currentProfile.currentStreak + 1
+            } else if daysDifference == 0 {
+                // Already posted today, keep current streak
+                newStreak = currentProfile.currentStreak
+            } else {
+                // More than 1 day gap, reset streak to 1
+                newStreak = 1
+            }
+        }
+        
+        db.collection("users").document(uid).updateData([
+            "currentStreak": newStreak,
+            "lastPostDate": Timestamp(date: Date()),
+            "updatedAt": Timestamp(date: Date())
+        ]) { [weak self] error in
+            if error == nil {
+                // Refresh the user profile
+                self?.fetchUserProfile(uid: uid)
+            }
+        }
+    }
+    
+    func checkAndUpdateStreaks() {
+        // This method can be called on app launch to check if streaks need to be reset
+        guard let uid = currentUser?.uid,
+              let currentProfile = currentUserProfile else { return }
+        
+        if let lastPostDate = currentProfile.lastPostDate {
+            let today = Calendar.current.startOfDay(for: Date())
+            let lastPostDay = Calendar.current.startOfDay(for: lastPostDate)
+            let daysDifference = Calendar.current.dateComponents([.day], from: lastPostDay, to: today).day ?? 0
+            
+            // If more than 1 day has passed since last post, reset streak
+            if daysDifference > 1 && currentProfile.currentStreak > 0 {
+                db.collection("users").document(uid).updateData([
+                    "currentStreak": 0,
+                    "updatedAt": Timestamp(date: Date())
+                ]) { [weak self] error in
+                    if error == nil {
+                        // Refresh the user profile
+                        self?.fetchUserProfile(uid: uid)
+                    }
+                }
             }
         }
     }

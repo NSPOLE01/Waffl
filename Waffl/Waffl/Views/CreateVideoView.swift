@@ -321,8 +321,9 @@ struct CreateVideoView: View {
                     self.showingSuccessMessage = true
                     self.hasPostedToday = true
                     
-                    // Update user's video count
+                    // Update user's video count and streak
                     self.updateUserVideoCount()
+                    self.authManager.updateStreakForVideoPost()
                 }
             }
         }
