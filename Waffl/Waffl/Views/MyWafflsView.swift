@@ -368,6 +368,7 @@ struct MyWafflVideoCard: View {
     @State private var showingLikesList = false
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
+    @State private var showingComments = false
     @State private var isDeleting = false
     @EnvironmentObject var authManager: AuthManager
     
@@ -544,6 +545,21 @@ struct MyWafflVideoCard: View {
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(8)
                     
+                    // Comments button
+                    Button(action: {
+                        showingComments = true
+                    }) {
+                        Image(systemName: "bubble.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 14)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .allowsHitTesting(true)
+                    
                     Spacer()
                 }
                 .padding(.horizontal, 4)
@@ -576,6 +592,9 @@ struct MyWafflVideoCard: View {
         )
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
+        }
+        .fullScreenCover(isPresented: $showingComments) {
+            CommentsView(videoId: video.id)
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, currentUserProfile: currentUserProfile, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)

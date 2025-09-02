@@ -20,6 +20,7 @@ struct VideoCard: View {
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
     @State private var showingUserProfile = false
+    @State private var showingComments = false
     @EnvironmentObject var authManager: AuthManager
     
     init(video: WaffleVideo) {
@@ -78,7 +79,7 @@ struct VideoCard: View {
                 
                 Spacer()
                 
-                // Views and likes section
+                // Views, likes, and comments section
                 HStack(spacing: 12) {
                     // View count with eye icon
                     HStack(spacing: 4) {
@@ -121,6 +122,17 @@ struct VideoCard: View {
                             .contentShape(Rectangle())
                         }
                     }
+                    
+                    // Comments button
+                    Button(action: {
+                        showingComments = true
+                    }) {
+                        Image(systemName: "bubble.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .contentShape(Rectangle())
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -138,6 +150,9 @@ struct VideoCard: View {
         .clipped()
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
+        }
+        .fullScreenCover(isPresented: $showingComments) {
+            CommentsView(videoId: video.id)
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
