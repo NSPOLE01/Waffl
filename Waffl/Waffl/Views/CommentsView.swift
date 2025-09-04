@@ -10,6 +10,7 @@ import FirebaseFirestore
 
 struct CommentsView: View {
     let videoId: String
+    let onDismiss: (() -> Void)?
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authManager: AuthManager
     @State private var comments: [Comment] = []
@@ -24,6 +25,7 @@ struct CommentsView: View {
                 HStack {
                     Button("Cancel") {
                         dismiss()
+                        onDismiss?()
                     }
                     .foregroundColor(.purple)
                     
@@ -471,6 +473,6 @@ struct CommentRowView: View {
 }
 
 #Preview {
-    CommentsView(videoId: "sample-video-id")
+    CommentsView(videoId: "sample-video-id", onDismiss: nil)
         .environmentObject(AuthManager())
 }

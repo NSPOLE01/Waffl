@@ -16,6 +16,7 @@ struct VideoCard: View {
     @State private var isLiked: Bool
     @State private var likeCount: Int
     @State private var viewCount: Int
+    @State private var commentCount: Int
     @State private var showingLikesList = false
     @State private var showingVideoPlayer = false
     @State private var showHeartAnimation = false
@@ -28,6 +29,7 @@ struct VideoCard: View {
         self._isLiked = State(initialValue: video.isLikedByCurrentUser)
         self._likeCount = State(initialValue: video.likeCount)
         self._viewCount = State(initialValue: video.viewCount)
+        self._commentCount = State(initialValue: video.commentCount)
     }
     
     var body: some View {
@@ -135,8 +137,8 @@ struct VideoCard: View {
                         .buttonStyle(PlainButtonStyle())
                         .contentShape(Rectangle())
                         
-                        if video.commentCount > 0 {
-                            Text("\(video.commentCount)")
+                        if commentCount > 0 {
+                            Text("\(commentCount)")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.secondary)
                         }
@@ -160,7 +162,9 @@ struct VideoCard: View {
             LikesListView(videoId: video.id)
         }
         .fullScreenCover(isPresented: $showingComments) {
-            CommentsView(videoId: video.id)
+            CommentsView(videoId: video.id) {
+                refreshCommentCount()
+            }
         }
         .fullScreenCover(isPresented: $showingVideoPlayer) {
             VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
@@ -313,6 +317,28 @@ struct VideoCard: View {
                 }
             } else {
                 print("✅ Like status updated successfully for video: \(self.video.id)")
+            }
+        }
+    }
+    
+    private func refreshCommentCount() {
+        let db = Firestore.firestore()
+        let videoRef = db.collection("videos").document(video.id)
+        
+        videoRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error refreshing comment count: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = snapshot?.data() else {
+                print("⚠️ No video data found for comment count refresh")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self.commentCount = data["commentCount"] as? Int ?? 0
+                print("✅ Refreshed comment count: \(self.commentCount)")
             }
         }
     }
