@@ -79,9 +79,16 @@ struct CommentsView: View {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             ForEach(comments) { comment in
-                                CommentRowView(comment: comment, onLike: {
-                                    toggleCommentLike(comment)
-                                })
+                                CommentRowView(
+                                    comment: comment, 
+                                    onLike: {
+                                        toggleCommentLike(comment)
+                                    },
+                                    onDelete: {
+                                        deleteComment(comment)
+                                    },
+                                    currentUserId: authManager.currentUser?.uid
+                                )
                                 .padding(.horizontal, 20)
                             }
                         }
@@ -270,6 +277,29 @@ struct CommentsView: View {
         }
     }
     
+    private func deleteComment(_ comment: Comment) {
+        guard let currentUserId = authManager.currentUser?.uid,
+              currentUserId == comment.authorId else {
+            print("❌ User not authorized to delete this comment")
+            return
+        }
+        
+        let db = Firestore.firestore()
+        let commentRef = db.collection("comments").document(comment.id)
+        
+        commentRef.delete { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Error deleting comment: \(error.localizedDescription)")
+                } else {
+                    print("✅ Comment deleted successfully!")
+                    self.loadComments()
+                    self.updateVideoCommentCount(increment: false)
+                }
+            }
+        }
+    }
+    
     private func updateVideoCommentCount(increment: Bool) {
         let db = Firestore.firestore()
         let videosRef = db.collection("videos").document(videoId)
@@ -304,68 +334,138 @@ struct CommentsView: View {
 struct CommentRowView: View {
     let comment: Comment
     let onLike: () -> Void
+    let onDelete: () -> Void
+    let currentUserId: String?
+    
+    @State private var dragOffset: CGFloat = 0
+    @State private var showingDeleteConfirmation = false
+    
+    private var canDelete: Bool {
+        return currentUserId == comment.authorId
+    }
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Profile picture
-            AsyncImage(url: URL(string: comment.authorProfileImageURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
-            } placeholder: {
-                Circle()
-                    .fill(Color.purple.opacity(0.1))
-                    .frame(width: 40, height: 40)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.purple)
-                    )
+        ZStack {
+            // Delete button background (revealed on swipe)
+            if canDelete {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        showingDeleteConfirmation = true
+                    }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 60, height: 60)
+                            .background(Color.red)
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .opacity(dragOffset < -50 ? 1.0 : 0.0)
+                .animation(.easeInOut(duration: 0.2), value: dragOffset)
             }
             
-            VStack(alignment: .leading, spacing: 6) {
-                // Author and time
-                HStack {
-                    Text(comment.authorName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Text(comment.timeAgoString)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+            // Main comment content
+            HStack(alignment: .top, spacing: 12) {
+                // Profile picture
+                AsyncImage(url: URL(string: comment.authorProfileImageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                } placeholder: {
+                    Circle()
+                        .fill(Color.purple.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.purple)
+                        )
                 }
                 
-                // Comment content
-                Text(comment.content)
-                    .font(.system(size: 15))
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.leading)
-                
-                // Like button
-                HStack {
-                    Button(action: onLike) {
-                        HStack(spacing: 4) {
-                            Image(systemName: comment.isLikedByCurrentUser ? "heart.fill" : "heart")
-                                .font(.system(size: 14))
-                                .foregroundColor(comment.isLikedByCurrentUser ? .red : .secondary)
-                            
-                            if comment.likesCount > 0 {
-                                Text("\(comment.likesCount)")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    // Author and time
+                    HStack {
+                        Text(comment.authorName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Text(comment.timeAgoString)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Comment content
+                    Text(comment.content)
+                        .font(.system(size: 15))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.leading)
+                    
+                    // Like button
+                    HStack {
+                        Button(action: onLike) {
+                            HStack(spacing: 4) {
+                                Image(systemName: comment.isLikedByCurrentUser ? "heart.fill" : "heart")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(comment.isLikedByCurrentUser ? .red : .secondary)
+                                
+                                if comment.likesCount > 0 {
+                                    Text("\(comment.likesCount)")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .background(Color(.systemBackground))
+            .offset(x: dragOffset)
+            .gesture(
+                canDelete ? 
+                DragGesture()
+                    .onChanged { value in
+                        // Only allow left swipe (negative translation)
+                        let newOffset = min(0, value.translation.width)
+                        dragOffset = max(newOffset, -80) // Limit swipe distance
+                    }
+                    .onEnded { value in
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            if dragOffset < -50 {
+                                // Keep slightly open to show delete button
+                                dragOffset = -70
+                            } else {
+                                // Snap back to original position
+                                dragOffset = 0
                             }
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Spacer()
+                : nil
+            )
+        }
+        .alert("Delete Comment", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    dragOffset = 0
                 }
-                .padding(.top, 4)
             }
+            Button("Delete", role: .destructive) {
+                onDelete()
+                withAnimation(.easeOut(duration: 0.3)) {
+                    dragOffset = 0
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this comment? This action cannot be undone.")
         }
     }
 }
