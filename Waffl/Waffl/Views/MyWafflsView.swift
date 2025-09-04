@@ -545,17 +545,25 @@ struct MyWafflVideoCard: View {
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(8)
                     
-                    // Comments button
+                    // Comments button with count
                     Button(action: {
                         showingComments = true
                     }) {
-                        Image(systemName: "bubble.left")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 14)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
+                        HStack(spacing: 6) {
+                            Image(systemName: "bubble.left")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.gray)
+                            
+                            if video.commentCount > 0 {
+                                Text("\(video.commentCount)")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
                     }
                     .buttonStyle(PlainButtonStyle())
                     .allowsHitTesting(true)

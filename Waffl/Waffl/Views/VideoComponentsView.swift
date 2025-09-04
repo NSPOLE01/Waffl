@@ -123,16 +123,24 @@ struct VideoCard: View {
                         }
                     }
                     
-                    // Comments button
-                    Button(action: {
-                        showingComments = true
-                    }) {
-                        Image(systemName: "bubble.left")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.gray)
+                    // Comments button with count
+                    HStack(spacing: 4) {
+                        Button(action: {
+                            showingComments = true
+                        }) {
+                            Image(systemName: "bubble.left")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
+                        
+                        if video.commentCount > 0 {
+                            Text("\(video.commentCount)")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .contentShape(Rectangle())
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -631,6 +639,7 @@ struct WaffleVideo: Identifiable, Codable {
     let likeCount: Int
     let isLikedByCurrentUser: Bool
     let viewCount: Int
+    let commentCount: Int
     
     // Initialize from Firestore document
     init(from document: DocumentSnapshot, currentUserId: String? = nil) throws {
@@ -655,6 +664,7 @@ struct WaffleVideo: Identifiable, Codable {
         self.isWatched = data?["isWatched"] as? Bool ?? false
         self.likeCount = data?["likeCount"] as? Int ?? 0
         self.viewCount = data?["viewCount"] as? Int ?? 0
+        self.commentCount = data?["commentCount"] as? Int ?? 0
         
         // Check if current user liked this video
         if let currentUserId = currentUserId,
@@ -666,7 +676,7 @@ struct WaffleVideo: Identifiable, Codable {
     }
     
     // Initialize with parameters (for creating new videos)
-    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false, likeCount: Int = 0, isLikedByCurrentUser: Bool = false, viewCount: Int = 0) {
+    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false, likeCount: Int = 0, isLikedByCurrentUser: Bool = false, viewCount: Int = 0, commentCount: Int = 0) {
         self.id = id
         self.authorId = authorId
         self.authorName = authorName
@@ -679,6 +689,7 @@ struct WaffleVideo: Identifiable, Codable {
         self.likeCount = likeCount
         self.isLikedByCurrentUser = isLikedByCurrentUser
         self.viewCount = viewCount
+        self.commentCount = commentCount
     }
     
     // Convert to dictionary for Firestore
@@ -693,7 +704,8 @@ struct WaffleVideo: Identifiable, Codable {
             "isWatched": isWatched,
             "likeCount": likeCount,
             "likes": [], // Initialize with empty likes array
-            "viewCount": viewCount
+            "viewCount": viewCount,
+            "commentCount": commentCount
         ]
         
         if let thumbnailURL = thumbnailURL {

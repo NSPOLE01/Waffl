@@ -207,6 +207,7 @@ struct CommentsView: View {
                     print("✅ Comment posted successfully!")
                     self.newCommentText = ""
                     self.loadComments() // Refresh comments
+                    self.updateVideoCommentCount(increment: true)
                 }
             }
         }
@@ -265,6 +266,36 @@ struct CommentsView: View {
                     print("✅ Comment like toggled successfully!")
                     self.loadComments() // Refresh to update like status
                 }
+            }
+        }
+    }
+    
+    private func updateVideoCommentCount(increment: Bool) {
+        let db = Firestore.firestore()
+        let videosRef = db.collection("videos").document(videoId)
+        
+        db.runTransaction { transaction, errorPointer in
+            let videoDocument: DocumentSnapshot
+            do {
+                try videoDocument = transaction.getDocument(videosRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            let currentCount = videoDocument.data()?["commentCount"] as? Int ?? 0
+            let newCount = increment ? currentCount + 1 : max(0, currentCount - 1)
+            
+            transaction.updateData([
+                "commentCount": newCount
+            ], forDocument: videosRef)
+            
+            return nil
+        } completion: { _, error in
+            if let error = error {
+                print("❌ Error updating comment count: \(error.localizedDescription)")
+            } else {
+                print("✅ Comment count updated successfully!")
             }
         }
     }
