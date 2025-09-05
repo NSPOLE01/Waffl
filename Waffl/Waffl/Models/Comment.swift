@@ -20,7 +20,6 @@ struct Comment: Codable, Identifiable, Hashable {
     let likesCount: Int
     let isLikedByCurrentUser: Bool
     
-    // Hashable conformance
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -29,7 +28,6 @@ struct Comment: Codable, Identifiable, Hashable {
         return lhs.id == rhs.id
     }
     
-    // Manual initializer for creating Comment instances
     init(id: String = UUID().uuidString, videoId: String, authorId: String, authorName: String, authorProfileImageURL: String = "", content: String, createdAt: Date = Date(), updatedAt: Date = Date(), likesCount: Int = 0, isLikedByCurrentUser: Bool = false) {
         self.id = id
         self.videoId = videoId
