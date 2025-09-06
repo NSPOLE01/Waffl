@@ -64,12 +64,10 @@ struct Comment: Codable, Identifiable, Hashable {
         self.updatedAt = updatedAtTimestamp.dateValue()
         self.likesCount = data?["likesCount"] as? Int ?? 0
         
-        // Check if current user has liked this comment
         let likedBy = data?["likedBy"] as? [String] ?? []
         self.isLikedByCurrentUser = likedBy.contains(currentUserId)
     }
     
-    // Convert to dictionary for Firestore
     func toDictionary() -> [String: Any] {
         return [
             "videoId": videoId,
@@ -80,7 +78,7 @@ struct Comment: Codable, Identifiable, Hashable {
             "createdAt": Timestamp(date: createdAt),
             "updatedAt": Timestamp(date: updatedAt),
             "likesCount": likesCount,
-            "likedBy": [] // This will be managed separately for likes
+            "likedBy": []
         ]
     }
     
