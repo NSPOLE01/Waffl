@@ -248,8 +248,8 @@ struct FriendSelectionRow: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Selection indicator
+            HStack(spacing: 0) {
+                // Selection indicator - positioned further left
                 ZStack {
                     Circle()
                         .stroke(isSelected ? Color.green : Color.gray, lineWidth: 2)
@@ -261,8 +261,12 @@ struct FriendSelectionRow: View {
                             .foregroundColor(.green)
                     }
                 }
+                .padding(.leading, 0)
                 
-                // Profile Picture
+                Spacer()
+                    .frame(width: 20)
+                
+                // Profile Picture - centered
                 AsyncImage(url: URL(string: friend.profileImageURL)) { image in
                     image
                         .resizable()
@@ -280,7 +284,10 @@ struct FriendSelectionRow: View {
                         )
                 }
                 
-                // User Info
+                Spacer()
+                    .frame(width: 16)
+                
+                // User Info - positioned to the right of profile pic
                 VStack(alignment: .leading, spacing: 4) {
                     Text(friend.displayName)
                         .font(.system(size: 16, weight: .semibold))
@@ -291,7 +298,7 @@ struct FriendSelectionRow: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
         .background(Color(UIColor.systemBackground))
