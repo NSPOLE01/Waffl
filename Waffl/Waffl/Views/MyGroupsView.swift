@@ -264,9 +264,9 @@ struct FriendSelectionRow: View {
                 .padding(.leading, -10)
                 
                 Spacer()
-                    .frame(width: 32)
+                    .frame(width: 20)
                 
-                // Profile Picture - centered
+                // Profile Picture - shifted left
                 AsyncImage(url: URL(string: friend.profileImageURL)) { image in
                     image
                         .resizable()
@@ -285,9 +285,9 @@ struct FriendSelectionRow: View {
                 }
                 
                 Spacer()
-                    .frame(width: 16)
+                    .frame(width: 12)
                 
-                // User Info - positioned to the right of profile pic
+                // User Info - shifted left alongside profile pic
                 VStack(alignment: .leading, spacing: 4) {
                     Text(friend.displayName)
                         .font(.system(size: 16, weight: .semibold))
