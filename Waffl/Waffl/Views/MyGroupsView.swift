@@ -249,22 +249,22 @@ struct FriendSelectionRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 0) {
-                // Selection indicator - positioned further left
+                // Selection indicator - positioned further left and smaller
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.green : Color.gray, lineWidth: 2)
-                        .frame(width: 24, height: 24)
+                        .stroke(isSelected ? Color.green : Color.gray, lineWidth: 1.5)
+                        .frame(width: 20, height: 20)
                     
                     if isSelected {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.green)
                     }
                 }
-                .padding(.leading, 0)
+                .padding(.leading, -10)
                 
                 Spacer()
-                    .frame(width: 20)
+                    .frame(width: 32)
                 
                 // Profile Picture - centered
                 AsyncImage(url: URL(string: friend.profileImageURL)) { image in
