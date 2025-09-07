@@ -223,7 +223,39 @@ struct CommentsView: View {
     }
     
     private func toggleCommentLike(_ comment: Comment) {
-        guard let currentUserId = authManager.currentUser?.uid else { return }
+        print("🔍 toggleCommentLike called for comment: \(comment.id)")
+        print("🔍 Current like status: \(comment.isLikedByCurrentUser)")
+        
+        guard let currentUserId = authManager.currentUser?.uid else { 
+            print("❌ No current user found")
+            return 
+        }
+        
+        // Find comment and update it with animation
+        if let index = comments.firstIndex(where: { $0.id == comment.id }) {
+            let currentComment = comments[index]
+            let wasLiked = currentComment.isLikedByCurrentUser
+            let newLikeCount = wasLiked ? max(0, currentComment.likesCount - 1) : currentComment.likesCount + 1
+            
+            let updatedComment = Comment(
+                id: currentComment.id,
+                videoId: currentComment.videoId,
+                authorId: currentComment.authorId,
+                authorName: currentComment.authorName,
+                authorProfileImageURL: currentComment.authorProfileImageURL,
+                content: currentComment.content,
+                createdAt: currentComment.createdAt,
+                updatedAt: currentComment.updatedAt,
+                likesCount: newLikeCount,
+                isLikedByCurrentUser: !wasLiked
+            )
+            
+            // Use objectWillChange to force update
+            DispatchQueue.main.async {
+                self.comments[index] = updatedComment
+            }
+            print("✅ Updated comment immediately: liked=\(!wasLiked)")
+        }
         
         let db = Firestore.firestore()
         let commentRef = db.collection("comments").document(comment.id)
@@ -271,9 +303,12 @@ struct CommentsView: View {
             DispatchQueue.main.async {
                 if let error = error {
                     print("❌ Error toggling comment like: \(error.localizedDescription)")
+                    // Reload comments on error to revert optimistic update and reset liked set
+                    self.loadComments()
                 } else {
                     print("✅ Comment like toggled successfully!")
-                    self.loadComments() // Refresh to update like status
+                    // Optionally refresh to ensure consistency
+                    // self.loadComments()
                 }
             }
         }
@@ -389,17 +424,42 @@ struct CommentRowView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    // Author and time
-                    HStack {
+                    // Author and time with like button positioned under time
+                    HStack(alignment: .top) {
+                        // Left side: Author name
                         Text(comment.authorName)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.primary)
                         
                         Spacer()
                         
-                        Text(comment.timeAgoString)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
+                        // Right side: Time and like button stacked
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text(comment.timeAgoString)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                print("🔍 Like button tapped for comment: \(comment.id)")
+                                onLike()
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: comment.isLikedByCurrentUser ? "heart.fill" : "heart")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(comment.isLikedByCurrentUser ? .red : .secondary)
+                                    
+                                    if comment.likesCount > 0 {
+                                        Text("\(comment.likesCount)")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
                     
                     // Comment content
@@ -407,27 +467,7 @@ struct CommentRowView: View {
                         .font(.system(size: 15))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)
-                    
-                    // Like button
-                    HStack {
-                        Button(action: onLike) {
-                            HStack(spacing: 4) {
-                                Image(systemName: comment.isLikedByCurrentUser ? "heart.fill" : "heart")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(comment.isLikedByCurrentUser ? .red : .secondary)
-                                
-                                if comment.likesCount > 0 {
-                                    Text("\(comment.likesCount)")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Spacer()
-                    }
-                    .padding(.top, 4)
+                        .padding(.top, 4)
                 }
             }
             .background(Color(.systemBackground))
