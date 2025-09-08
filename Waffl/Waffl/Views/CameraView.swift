@@ -17,7 +17,6 @@ struct CameraView: View {
     
     var body: some View {
         ZStack {
-            // Camera preview
             CameraPreview(cameraManager: cameraManager)
                 .ignoresSafeArea()
             
