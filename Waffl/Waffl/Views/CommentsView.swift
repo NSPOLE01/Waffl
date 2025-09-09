@@ -23,7 +23,7 @@ struct CommentsView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button("Cancel") {
+                    Button("Done") {
                         dismiss()
                         onDismiss?()
                     }
