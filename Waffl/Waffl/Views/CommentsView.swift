@@ -123,7 +123,10 @@ struct CommentsView: View {
                         
                         // Text input
                         TextField("Add a comment...", text: $newCommentText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(20)
                             .disabled(isPostingComment)
                         
                         // Post button
