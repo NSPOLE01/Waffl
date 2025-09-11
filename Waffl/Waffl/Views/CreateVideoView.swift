@@ -40,10 +40,8 @@ struct CreateVideoView: View {
                 
                 Spacer()
                 
-                // Recording status
                 VStack(spacing: 16) {
                     if hasPostedToday {
-                        // Show checkmark and text when user has already posted today
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.green)
