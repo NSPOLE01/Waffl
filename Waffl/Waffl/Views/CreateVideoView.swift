@@ -64,7 +64,6 @@ struct CreateVideoView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.green)
                     } else {
-                        // Show video icon and "no video" text when no video is recorded
                         ZStack {
                             Circle()
                                 .fill(Color.purple.opacity(0.1))
