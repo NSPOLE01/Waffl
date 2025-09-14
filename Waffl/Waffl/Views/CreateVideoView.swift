@@ -55,7 +55,6 @@ struct CreateVideoView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     } else if let videoURL = recordedVideoURL {
-                        // Show only checkmark and success text when video is recorded
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.green)
