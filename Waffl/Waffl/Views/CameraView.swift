@@ -96,11 +96,9 @@ struct CameraView: View {
                         .padding(.horizontal, 40)
                     }
                     
-                    // Record button row
                     HStack {
                         Spacer()
                         
-                        // Record button
                     Button(action: {
                         if cameraManager.isRecording {
                             cameraManager.stopRecording { url in
