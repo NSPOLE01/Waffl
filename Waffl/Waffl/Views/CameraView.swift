@@ -76,7 +76,6 @@ struct CameraView: View {
                 
                 // Bottom controls
                 VStack(spacing: 16) {
-                    // Progress bar (only show when recording)
                     if cameraManager.isRecording {
                         VStack(spacing: 8) {
                             HStack {
