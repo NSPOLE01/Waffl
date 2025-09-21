@@ -18,6 +18,7 @@ struct CommentsView: View {
     @State private var newCommentText = ""
     @State private var isPostingComment = false
     @State private var optimisticLikes: [String: Bool] = [:] // Track immediate like states
+    @State private var optimisticLikeCounts: [String: Int] = [:] // Track immediate like counts
     
     var body: some View {
         NavigationView {
@@ -83,7 +84,7 @@ struct CommentsView: View {
                         LazyVStack(spacing: 16) {
                             ForEach(comments) { comment in
                                 CommentRowView(
-                                    comment: comment, 
+                                    comment: comment,
                                     onLike: {
                                         toggleCommentLike(comment)
                                     },
@@ -91,7 +92,8 @@ struct CommentsView: View {
                                         deleteComment(comment)
                                     },
                                     currentUserId: authManager.currentUser?.uid,
-                                    optimisticLiked: optimisticLikes[comment.id] ?? comment.isLikedByCurrentUser
+                                    optimisticLiked: optimisticLikes[comment.id] ?? comment.isLikedByCurrentUser,
+                                    optimisticLikeCount: optimisticLikeCounts[comment.id] ?? comment.likesCount
                                 )
                                 .padding(.horizontal, 20)
                             }
@@ -189,6 +191,7 @@ struct CommentsView: View {
                     
                     self.comments = loadedComments
                     self.optimisticLikes.removeAll() // Clear optimistic states to use server data
+                    self.optimisticLikeCounts.removeAll() // Clear optimistic like counts
                     print("✅ Loaded \(loadedComments.count) comments")
                 }
             }
@@ -240,9 +243,12 @@ struct CommentsView: View {
         // IMMEDIATE UI UPDATE: Set optimistic state first
         let currentLikeState = optimisticLikes[comment.id] ?? comment.isLikedByCurrentUser
         let newLikeState = !currentLikeState
-        
+        let currentLikeCount = optimisticLikeCounts[comment.id] ?? comment.likesCount
+        let newLikeCount = newLikeState ? currentLikeCount + 1 : max(0, currentLikeCount - 1)
+
         DispatchQueue.main.async {
             self.optimisticLikes[comment.id] = newLikeState
+            self.optimisticLikeCounts[comment.id] = newLikeCount
         }
         
         print("🔍 Optimistic like state set to: \(newLikeState) for comment: \(comment.id)")
@@ -296,6 +302,7 @@ struct CommentsView: View {
                     print("❌ Error toggling comment like: \(error.localizedDescription)")
                     // Revert optimistic state on error
                     self.optimisticLikes.removeValue(forKey: comment.id)
+                    self.optimisticLikeCounts.removeValue(forKey: comment.id)
                     self.loadComments()
                 } else {
                     print("✅ Comment like toggled successfully!")
@@ -366,6 +373,7 @@ struct CommentRowView: View {
     let onDelete: () -> Void
     let currentUserId: String?
     let optimisticLiked: Bool
+    let optimisticLikeCount: Int
     
     @State private var dragOffset: CGFloat = 0
     @State private var showingDeleteConfirmation = false
@@ -441,8 +449,8 @@ struct CommentRowView: View {
                                         .font(.system(size: 16))
                                         .foregroundColor(optimisticLiked ? .red : .secondary)
                                     
-                                    if comment.likesCount > 0 {
-                                        Text("\(comment.likesCount)")
+                                    if optimisticLikeCount > 0 {
+                                        Text("\(optimisticLikeCount)")
                                             .font(.system(size: 12))
                                             .foregroundColor(.secondary)
                                     }
