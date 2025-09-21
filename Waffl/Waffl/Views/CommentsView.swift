@@ -17,8 +17,8 @@ struct CommentsView: View {
     @State private var isLoading = true
     @State private var newCommentText = ""
     @State private var isPostingComment = false
-    @State private var optimisticLikes: [String: Bool] = [:] // Track immediate like states
-    @State private var optimisticLikeCounts: [String: Int] = [:] // Track immediate like counts
+    @State private var optimisticLikes: [String: Bool] = [:]
+    @State private var optimisticLikeCounts: [String: Int] = [:]
     
     var body: some View {
         NavigationView {
@@ -39,9 +39,7 @@ struct CommentsView: View {
                     
                     Spacer()
                     
-                    // Invisible button for balance
                     Button("Cancel") {
-                        // Do nothing
                     }
                     .opacity(0)
                 }
@@ -190,9 +188,8 @@ struct CommentsView: View {
                     }
                     
                     self.comments = loadedComments
-                    self.optimisticLikes.removeAll() // Clear optimistic states to use server data
-                    self.optimisticLikeCounts.removeAll() // Clear optimistic like counts
-                    print("✅ Loaded \(loadedComments.count) comments")
+                    self.optimisticLikes.removeAll()
+                    self.optimisticLikeCounts.removeAll()
                 }
             }
     }
@@ -232,8 +229,6 @@ struct CommentsView: View {
     }
     
     private func toggleCommentLike(_ comment: Comment) {
-        print("🔍 toggleCommentLike called for comment: \(comment.id)")
-        print("🔍 Current like status: \(comment.isLikedByCurrentUser)")
         
         guard let currentUserId = authManager.currentUser?.uid else { 
             print("❌ No current user found")
@@ -250,10 +245,7 @@ struct CommentsView: View {
             self.optimisticLikes[comment.id] = newLikeState
             self.optimisticLikeCounts[comment.id] = newLikeCount
         }
-        
-        print("🔍 Optimistic like state set to: \(newLikeState) for comment: \(comment.id)")
-        print("✅ Heart should turn \(newLikeState ? "RED" : "GRAY") immediately!")
-        
+
         let db = Firestore.firestore()
         let commentRef = db.collection("comments").document(comment.id)
         
@@ -278,7 +270,6 @@ struct CommentsView: View {
             let currentLikes = data["likesCount"] as? Int ?? 0
             
             if likedBy.contains(currentUserId) {
-                // Unlike
                 let updatedLikedBy = likedBy.filter { $0 != currentUserId }
                 transaction.updateData([
                     "likedBy": updatedLikedBy,
@@ -286,7 +277,6 @@ struct CommentsView: View {
                     "updatedAt": Timestamp(date: Date())
                 ], forDocument: commentRef)
             } else {
-                // Like
                 let updatedLikedBy = likedBy + [currentUserId]
                 transaction.updateData([
                     "likedBy": updatedLikedBy,
@@ -305,9 +295,6 @@ struct CommentsView: View {
                     self.optimisticLikeCounts.removeValue(forKey: comment.id)
                     self.loadComments()
                 } else {
-                    print("✅ Comment like toggled successfully!")
-                    // Optionally refresh to ensure consistency
-                    // self.loadComments()
                 }
             }
         }
@@ -477,17 +464,14 @@ struct CommentRowView: View {
                 canDelete ? 
                 DragGesture()
                     .onChanged { value in
-                        // Only allow left swipe (negative translation)
                         let newOffset = min(0, value.translation.width)
-                        dragOffset = max(newOffset, -80) // Limit swipe distance
+                        dragOffset = max(newOffset, -80) 
                     }
                     .onEnded { value in
                         withAnimation(.easeOut(duration: 0.3)) {
                             if dragOffset < -50 {
-                                // Keep slightly open to show delete button
                                 dragOffset = -70
                             } else {
-                                // Snap back to original position
                                 dragOffset = 0
                             }
                         }
