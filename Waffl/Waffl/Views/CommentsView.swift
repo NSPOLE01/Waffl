@@ -17,6 +17,7 @@ struct CommentsView: View {
     @State private var isLoading = true
     @State private var newCommentText = ""
     @State private var isPostingComment = false
+    @State private var optimisticLikes: [String: Bool] = [:] // Track immediate like states
     
     var body: some View {
         NavigationView {
@@ -89,7 +90,8 @@ struct CommentsView: View {
                                     onDelete: {
                                         deleteComment(comment)
                                     },
-                                    currentUserId: authManager.currentUser?.uid
+                                    currentUserId: authManager.currentUser?.uid,
+                                    optimisticLiked: optimisticLikes[comment.id] ?? comment.isLikedByCurrentUser
                                 )
                                 .padding(.horizontal, 20)
                             }
@@ -186,6 +188,7 @@ struct CommentsView: View {
                     }
                     
                     self.comments = loadedComments
+                    self.optimisticLikes.removeAll() // Clear optimistic states to use server data
                     print("✅ Loaded \(loadedComments.count) comments")
                 }
             }
@@ -234,31 +237,16 @@ struct CommentsView: View {
             return 
         }
         
-        // Find comment and update it with animation
-        if let index = comments.firstIndex(where: { $0.id == comment.id }) {
-            let currentComment = comments[index]
-            let wasLiked = currentComment.isLikedByCurrentUser
-            let newLikeCount = wasLiked ? max(0, currentComment.likesCount - 1) : currentComment.likesCount + 1
-            
-            let updatedComment = Comment(
-                id: currentComment.id,
-                videoId: currentComment.videoId,
-                authorId: currentComment.authorId,
-                authorName: currentComment.authorName,
-                authorProfileImageURL: currentComment.authorProfileImageURL,
-                content: currentComment.content,
-                createdAt: currentComment.createdAt,
-                updatedAt: currentComment.updatedAt,
-                likesCount: newLikeCount,
-                isLikedByCurrentUser: !wasLiked
-            )
-            
-            // Use objectWillChange to force update
-            DispatchQueue.main.async {
-                self.comments[index] = updatedComment
-            }
-            print("✅ Updated comment immediately: liked=\(!wasLiked)")
+        // IMMEDIATE UI UPDATE: Set optimistic state first
+        let currentLikeState = optimisticLikes[comment.id] ?? comment.isLikedByCurrentUser
+        let newLikeState = !currentLikeState
+        
+        DispatchQueue.main.async {
+            self.optimisticLikes[comment.id] = newLikeState
         }
+        
+        print("🔍 Optimistic like state set to: \(newLikeState) for comment: \(comment.id)")
+        print("✅ Heart should turn \(newLikeState ? "RED" : "GRAY") immediately!")
         
         let db = Firestore.firestore()
         let commentRef = db.collection("comments").document(comment.id)
@@ -306,7 +294,8 @@ struct CommentsView: View {
             DispatchQueue.main.async {
                 if let error = error {
                     print("❌ Error toggling comment like: \(error.localizedDescription)")
-                    // Reload comments on error to revert optimistic update and reset liked set
+                    // Revert optimistic state on error
+                    self.optimisticLikes.removeValue(forKey: comment.id)
                     self.loadComments()
                 } else {
                     print("✅ Comment like toggled successfully!")
@@ -376,6 +365,7 @@ struct CommentRowView: View {
     let onLike: () -> Void
     let onDelete: () -> Void
     let currentUserId: String?
+    let optimisticLiked: Bool
     
     @State private var dragOffset: CGFloat = 0
     @State private var showingDeleteConfirmation = false
@@ -447,9 +437,9 @@ struct CommentRowView: View {
                                 onLike()
                             }) {
                                 HStack(spacing: 4) {
-                                    Image(systemName: comment.isLikedByCurrentUser ? "heart.fill" : "heart")
+                                    Image(systemName: optimisticLiked ? "heart.fill" : "heart")
                                         .font(.system(size: 16))
-                                        .foregroundColor(comment.isLikedByCurrentUser ? .red : .secondary)
+                                        .foregroundColor(optimisticLiked ? .red : .secondary)
                                     
                                     if comment.likesCount > 0 {
                                         Text("\(comment.likesCount)")
