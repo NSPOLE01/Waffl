@@ -150,7 +150,7 @@ struct CreateGroupView: View {
                     .padding(.top, 40)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 12) {
+                        LazyVStack(spacing: 6) {
                             ForEach(friends) { friend in
                                 FriendSelectionRow(
                                     friend: friend,
@@ -265,58 +265,52 @@ struct FriendSelectionRow: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 0) {
-                // Selection indicator - positioned further left and smaller
+            HStack(spacing: 12) {
+                // Selection indicator - moved further left
                 ZStack {
                     Circle()
                         .stroke(isSelected ? Color.green : Color.gray, lineWidth: 1.5)
                         .frame(width: 20, height: 20)
-                    
+
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.green)
                     }
                 }
-                .padding(.leading, -10)
-                
-                Spacer()
-                    .frame(width: 20)
-                
-                // Profile Picture - shifted left
+
+                // Profile Picture
                 AsyncImage(url: URL(string: friend.profileImageURL)) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 50, height: 50)
+                        .frame(width: 44, height: 44)
                         .clipShape(Circle())
                 } placeholder: {
                     Circle()
                         .fill(Color.purple.opacity(0.1))
-                        .frame(width: 50, height: 50)
+                        .frame(width: 44, height: 44)
                         .overlay(
                             Image(systemName: "person.fill")
-                                .font(.system(size: 24))
+                                .font(.system(size: 20))
                                 .foregroundColor(.purple)
                         )
                 }
-                
-                Spacer()
-                    .frame(width: 12)
-                
-                // User Info - shifted left alongside profile pic
-                VStack(alignment: .leading, spacing: 4) {
+
+                // User Info
+                VStack(alignment: .leading, spacing: 2) {
                     Text(friend.displayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                 }
-                
+
                 Spacer()
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.leading, 8)
+        .padding(.trailing, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
