@@ -339,7 +339,6 @@ struct GroupRowView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            // Group Icon
             ZStack {
                 Circle()
                     .fill(Color.purple.opacity(0.1))
