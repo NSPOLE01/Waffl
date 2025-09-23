@@ -199,12 +199,160 @@ struct MyGroupsView: View {
     }
 }
 
+// MARK: - Group Videos View
+struct GroupVideosView: View {
+    let group: WaffleGroup
+    @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
+    @State private var videos: [WaffleVideo] = []
+    @State private var isLoadingVideos = true
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+
+                    Spacer()
+
+                    Text(group.name)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // Placeholder for balance
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .opacity(0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+
+                // Week info
+                VStack(spacing: 4) {
+                    Text("This Week's Waffls")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Text("\(group.memberCount) member\(group.memberCount == 1 ? "" : "s")")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 16)
+
+                // Videos content
+                if isLoadingVideos {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading this week's videos...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                } else if videos.isEmpty {
+                    Spacer()
+                    VStack(spacing: 20) {
+                        Image(systemName: "video.slash")
+                            .font(.system(size: 50))
+                            .foregroundColor(.purple.opacity(0.6))
+
+                        Text("No Videos This Week")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        Text("Group members haven't posted any waffls this week yet")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 20) {
+                            ForEach(videos) { video in
+                                VideoCard(video: video)
+                                    .padding(.horizontal, 20)
+                            }
+                        }
+                        .padding(.vertical, 16)
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            loadGroupVideos()
+        }
+        .refreshable {
+            loadGroupVideos()
+        }
+    }
+
+    private func loadGroupVideos() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            isLoadingVideos = false
+            return
+        }
+
+        isLoadingVideos = true
+        let db = Firestore.firestore()
+
+        // Calculate start of current week
+        let calendar = Calendar.current
+        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+
+        // Get videos from group members posted this week
+        db.collection("videos")
+            .whereField("authorId", in: group.members)
+            .whereField("uploadDate", isGreaterThanOrEqualTo: Timestamp(date: startOfWeek))
+            .order(by: "uploadDate", descending: true)
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoadingVideos = false
+
+                    if let error = error {
+                        print("❌ Error loading group videos: \(error.localizedDescription)")
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else {
+                        print("⚠️ No group videos found")
+                        self.videos = []
+                        return
+                    }
+
+                    let loadedVideos = documents.compactMap { document in
+                        try? WaffleVideo(from: document, currentUserId: currentUserId)
+                    }
+
+                    self.videos = loadedVideos
+                    print("✅ Loaded \(loadedVideos.count) group videos from this week")
+                }
+            }
+    }
+}
+
 // MARK: - Group Row View
 struct GroupRowView: View {
     let group: WaffleGroup
+    @State private var showingGroupVideos = false
 
     var body: some View {
-        HStack(spacing: 16) {
+        Button(action: {
+            showingGroupVideos = true
+        }) {
+            HStack(spacing: 16) {
             // Group Icon
             ZStack {
                 Circle()
@@ -233,12 +381,17 @@ struct GroupRowView: View {
             Image(systemName: "chevron.right")
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
+            }
         }
+        .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .fullScreenCover(isPresented: $showingGroupVideos) {
+            GroupVideosView(group: group)
+        }
     }
 }
 
