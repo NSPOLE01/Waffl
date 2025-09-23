@@ -72,10 +72,6 @@ struct MyGroupsView: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.primary)
 
-                    Text("Groups you're part of")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
                 }
                 .padding(.top, 20)
 
@@ -228,10 +224,6 @@ struct GroupRowView: View {
 
                 Text("\(group.memberCount) member\(group.memberCount == 1 ? "" : "s")")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-
-                Text("Created \(group.createdAt.formatted(.relative(presentation: .named)))")
-                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
 
