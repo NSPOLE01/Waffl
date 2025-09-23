@@ -412,50 +412,48 @@ struct CommentRowView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    // Author and time with like button positioned under time
-                    HStack(alignment: .top) {
-                        // Left side: Author name
+                    // Author and time
+                    HStack {
                         Text(comment.authorName)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.primary)
-                        
+
                         Spacer()
-                        
-                        // Right side: Time and like button stacked
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text(comment.timeAgoString)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                            
-                            Button(action: {
-                                print("🔍 Like button tapped for comment: \(comment.id)")
-                                onLike()
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: optimisticLiked ? "heart.fill" : "heart")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(optimisticLiked ? .red : .secondary)
-                                    
-                                    if optimisticLikeCount > 0 {
-                                        Text("\(optimisticLikeCount)")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+
+                        Text(comment.timeAgoString)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
                     }
-                    
-                    // Comment content
-                    Text(comment.content)
-                        .font(.system(size: 15))
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.leading)
-                        .padding(.top, 4)
+
+                    // Comment content and like button on same line
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(comment.content)
+                            .font(.system(size: 15))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Button(action: {
+                            print("🔍 Like button tapped for comment: \(comment.id)")
+                            onLike()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: optimisticLiked ? "heart.fill" : "heart")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(optimisticLiked ? .red : .secondary)
+
+                                if optimisticLikeCount > 0 {
+                                    Text("\(optimisticLikeCount)")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
             }
             .background(Color(.systemBackground))
