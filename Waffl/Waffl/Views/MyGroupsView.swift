@@ -10,117 +10,302 @@ import Firebase
 import FirebaseFirestore
 import FirebaseStorage
 
+// MARK: - Group Data Model
+struct WaffleGroup: Identifiable, Codable {
+    let id: String
+    let name: String
+    let createdBy: String
+    let createdAt: Date
+    let members: [String] // Array of user IDs
+    let memberCount: Int
+
+    init(id: String = UUID().uuidString, name: String, createdBy: String, members: [String]) {
+        self.id = id
+        self.name = name
+        self.createdBy = createdBy
+        self.createdAt = Date()
+        self.members = members
+        self.memberCount = members.count
+    }
+
+    init(from document: DocumentSnapshot) throws {
+        let data = document.data()
+
+        guard let name = data?["name"] as? String,
+              let createdBy = data?["createdBy"] as? String,
+              let createdAtTimestamp = data?["createdAt"] as? Timestamp,
+              let members = data?["members"] as? [String] else {
+            throw NSError(domain: "GroupModelError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid group data"])
+        }
+
+        self.id = document.documentID
+        self.name = name
+        self.createdBy = createdBy
+        self.createdAt = createdAtTimestamp.dateValue()
+        self.members = members
+        self.memberCount = data?["memberCount"] as? Int ?? members.count
+    }
+
+    func toDictionary() -> [String: Any] {
+        return [
+            "name": name,
+            "createdBy": createdBy,
+            "createdAt": Timestamp(date: createdAt),
+            "members": members,
+            "memberCount": memberCount
+        ]
+    }
+}
+
 struct MyGroupsView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var showingCreateGroup = false
+    @State private var groups: [WaffleGroup] = []
+    @State private var isLoadingGroups = true
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
+            VStack(spacing: 20) {
                 // Header
                 VStack(spacing: 8) {
                     Text("My Groups")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.primary)
-                    
-                    Text("Groups you're part of will appear here")
+
+                    Text("Groups you're part of")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 40)
-                
-                Spacer()
-                
-                // Empty state
-                VStack(spacing: 20) {
-                    Image(systemName: "person.3.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.purple.opacity(0.6))
-                    
-                    Text("No Groups Yet")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Text("Join or create groups to see them here")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                    
+                .padding(.top, 20)
+
+                // Groups content
+                if isLoadingGroups {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading your groups...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                } else if groups.isEmpty {
+                    Spacer()
+                    // Empty state
+                    VStack(spacing: 20) {
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.purple.opacity(0.6))
+
+                        Text("No Groups Yet")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        Text("Join or create groups to see them here")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+
+                        Button(action: {
+                            showingCreateGroup = true
+                        }) {
+                            Text("Create Group")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color.purple)
+                                .cornerRadius(25)
+                        }
+                        .padding(.top, 20)
+                    }
+                    Spacer()
+                } else {
+                    // Groups list
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(groups) { group in
+                                GroupRowView(group: group)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 10)
+                    }
+
+                    // Create Group button when groups exist
                     Button(action: {
                         showingCreateGroup = true
                     }) {
-                        Text("Create Group")
+                        Text("Create New Group")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
                             .background(Color.purple)
-                            .cornerRadius(25)
+                            .cornerRadius(12)
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
-                
-                Spacer()
             }
-            .padding(.horizontal, 24)
             .navigationBarHidden(true)
         }
         .fullScreenCover(isPresented: $showingCreateGroup) {
-            CreateGroupView()
+            CreateGroupView(onGroupCreated: {
+                loadGroups() // Refresh groups when a new group is created
+            })
         }
+        .onAppear {
+            loadGroups()
+        }
+        .refreshable {
+            loadGroups()
+        }
+    }
+
+    private func loadGroups() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            isLoadingGroups = false
+            return
+        }
+
+        isLoadingGroups = true
+        let db = Firestore.firestore()
+
+        // Get groups where the current user is a member
+        db.collection("groups")
+            .whereField("members", arrayContains: currentUserId)
+            .order(by: "createdAt", descending: true)
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoadingGroups = false
+
+                    if let error = error {
+                        print("❌ Error loading groups: \(error.localizedDescription)")
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else {
+                        print("⚠️ No groups found")
+                        self.groups = []
+                        return
+                    }
+
+                    let loadedGroups = documents.compactMap { document in
+                        try? WaffleGroup(from: document)
+                    }
+
+                    self.groups = loadedGroups
+                    print("✅ Loaded \(loadedGroups.count) groups")
+                }
+            }
+    }
+}
+
+// MARK: - Group Row View
+struct GroupRowView: View {
+    let group: WaffleGroup
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // Group Icon
+            ZStack {
+                Circle()
+                    .fill(Color.purple.opacity(0.1))
+                    .frame(width: 50, height: 50)
+
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.purple)
+            }
+
+            // Group Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(group.name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+
+                Text("\(group.memberCount) member\(group.memberCount == 1 ? "" : "s")")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+
+                Text("Created \(group.createdAt.formatted(.relative(presentation: .named)))")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            // Arrow indicator
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
 
 struct CreateGroupView: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.presentationMode) var presentationMode
+    let onGroupCreated: (() -> Void)?
     
     @State private var friends: [WaffleUser] = []
     @State private var selectedFriends: Set<String> = []
     @State private var isLoadingFriends = true
+    @State private var groupName = ""
+    @State private var isCreatingGroup = false
+
+    private var isButtonEnabled: Bool {
+        !selectedFriends.isEmpty && !groupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header with back button
-            HStack {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header with back button
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+
+                    Spacer()
+
+                    Text("Create Group")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // Placeholder for balance
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.primary)
+                        .opacity(0)
                 }
-                
-                Spacer()
-                
-                Text("Create Group")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                // Placeholder for balance
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .opacity(0)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
             
             VStack(spacing: 20) {
-                // Instructions
-                VStack(spacing: 8) {
-                    Text("Select Friends")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.primary)
-                    
-                    Text("Choose friends to add to your group")
+
+                // Group name input - moved below instructions
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Name this Group", text: $groupName)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
                         .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
                 }
-                .padding(.top, 20)
+                .padding(.top, 24)
                 
                 // Friends list
                 if isLoadingFriends {
@@ -169,35 +354,89 @@ struct CreateGroupView: View {
 
                 // Create Group Button
                 Button(action: {
-                    // TODO: Implement create group functionality
-                    print("Create Group button tapped")
+                    createGroup()
                 }) {
-                    Text("Create Group")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(selectedFriends.isEmpty ? Color.gray : Color.purple)
-                        .cornerRadius(12)
+                    HStack {
+                        if isCreatingGroup {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                            Text("Creating...")
+                        } else {
+                            Text("Create Group")
+                        }
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(isButtonEnabled ? Color.purple : Color.gray)
+                    .cornerRadius(12)
                 }
-                .disabled(selectedFriends.isEmpty)
+                .disabled(!isButtonEnabled || isCreatingGroup)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
             }
             .padding(.horizontal, 24)
+            }
+            .navigationBarHidden(true)
         }
-        .navigationBarHidden(true)
+        .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             loadFriends()
+        }
+    }
+
+    private func createGroup() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found")
+            return
+        }
+
+        let trimmedName = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, !selectedFriends.isEmpty else {
+            print("❌ Group name or selected friends is empty")
+            return
+        }
+
+        isCreatingGroup = true
+
+        // Include the current user in the members array
+        var allMembers = Array(selectedFriends)
+        allMembers.append(currentUserId)
+
+        let group = WaffleGroup(
+            name: trimmedName,
+            createdBy: currentUserId,
+            members: allMembers
+        )
+
+        let db = Firestore.firestore()
+
+        db.collection("groups").document(group.id).setData(group.toDictionary()) { error in
+            DispatchQueue.main.async {
+                self.isCreatingGroup = false
+
+                if let error = error {
+                    print("❌ Error creating group: \(error.localizedDescription)")
+                } else {
+                    print("✅ Group created successfully!")
+                    self.onGroupCreated?()
+                    self.presentationMode.wrappedValue.dismiss()
+                }
+            }
         }
     }
     
     private func toggleFriendSelection(_ friendId: String) {
         if selectedFriends.contains(friendId) {
             selectedFriends.remove(friendId)
+            print("🔍 Removed friend: \(friendId). Selected count: \(selectedFriends.count)")
         } else {
             selectedFriends.insert(friendId)
+            print("🔍 Added friend: \(friendId). Selected count: \(selectedFriends.count)")
         }
+        print("🔍 Button enabled: \(isButtonEnabled)")
     }
     
     private func loadFriends() {
