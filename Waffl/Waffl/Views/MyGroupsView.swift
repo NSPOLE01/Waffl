@@ -166,6 +166,23 @@ struct CreateGroupView: View {
                 }
                 
                 Spacer()
+
+                // Create Group Button
+                Button(action: {
+                    // TODO: Implement create group functionality
+                    print("Create Group button tapped")
+                }) {
+                    Text("Create Group")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(selectedFriends.isEmpty ? Color.gray : Color.purple)
+                        .cornerRadius(12)
+                }
+                .disabled(selectedFriends.isEmpty)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
             .padding(.horizontal, 24)
         }
