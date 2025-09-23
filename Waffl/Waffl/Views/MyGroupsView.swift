@@ -338,10 +338,7 @@ struct GroupRowView: View {
     @State private var showingGroupVideos = false
 
     var body: some View {
-        Button(action: {
-            showingGroupVideos = true
-        }) {
-            HStack(spacing: 16) {
+        HStack(spacing: 16) {
             // Group Icon
             ZStack {
                 Circle()
@@ -363,21 +360,21 @@ struct GroupRowView: View {
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             // Arrow indicator
             Image(systemName: "chevron.right")
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
-            }
         }
-        .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .onTapGesture {
+            showingGroupVideos = true
+        }
         .fullScreenCover(isPresented: $showingGroupVideos) {
             GroupVideosView(group: group)
         }
