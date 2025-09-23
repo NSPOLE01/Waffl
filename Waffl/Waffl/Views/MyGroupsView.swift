@@ -236,18 +236,6 @@ struct GroupVideosView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
 
-                // Week info
-                VStack(spacing: 4) {
-                    Text("This Week's Waffls")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-
-                    Text("\(group.memberCount) member\(group.memberCount == 1 ? "" : "s")")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.vertical, 16)
-
                 // Videos content
                 if isLoadingVideos {
                     Spacer()
@@ -275,6 +263,7 @@ struct GroupVideosView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }
+                    .frame(maxWidth: .infinity)
                     Spacer()
                 } else {
                     ScrollView {
