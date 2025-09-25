@@ -349,6 +349,12 @@ struct GroupMembersView: View {
     @State private var isLoadingMembers = true
     @State private var isAccordionExpanded = false
     @State private var showingAddUsers = false
+    @State private var showingLeaveConfirmation = false
+
+    private var otherMembers: [WaffleUser] {
+        guard let currentUserId = authManager.currentUser?.uid else { return members }
+        return members.filter { $0.uid != currentUserId }
+    }
 
     var body: some View {
         NavigationView {
@@ -411,7 +417,7 @@ struct GroupMembersView: View {
                                             .font(.system(size: 14))
                                             .foregroundColor(.secondary)
                                     } else {
-                                        Text("\(members.count) member\(members.count == 1 ? "" : "s")")
+                                        Text("\(otherMembers.count) other member\(otherMembers.count == 1 ? "" : "s")")
                                             .font(.system(size: 14))
                                             .foregroundColor(.secondary)
                                     }
@@ -447,19 +453,23 @@ struct GroupMembersView: View {
                                                 .foregroundColor(.secondary)
                                         }
                                         .padding(.vertical, 20)
-                                    } else if members.isEmpty {
+                                    } else if otherMembers.isEmpty {
                                         VStack(spacing: 16) {
                                             Image(systemName: "person.2.slash")
                                                 .font(.system(size: 40))
                                                 .foregroundColor(.purple.opacity(0.6))
 
-                                            Text("No Members Found")
+                                            Text("No Other Members")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(.primary)
+
+                                            Text("You're the only member in this group")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
                                         }
                                         .padding(.vertical, 20)
                                     } else {
-                                        ForEach(members) { member in
+                                        ForEach(otherMembers) { member in
                                             GroupMemberRow(
                                                 member: member,
                                                 onDelete: {
@@ -477,6 +487,21 @@ struct GroupMembersView: View {
                         .padding(.top, 16)
 
                         Spacer()
+
+                        // Leave Group Button
+                        Button(action: {
+                            showingLeaveConfirmation = true
+                        }) {
+                            Text("Leave Group")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.red)
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
                 }
             }
@@ -492,6 +517,39 @@ struct GroupMembersView: View {
         .fullScreenCover(isPresented: $showingAddUsers) {
             AddUsersToGroupView(group: group) {
                 loadGroupMembers() // Refresh members when users are added
+            }
+        }
+        .alert("Leave Group", isPresented: $showingLeaveConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Leave", role: .destructive) {
+                leaveGroup()
+            }
+        } message: {
+            Text("Are you sure you want to leave \(group.name)? You won't be able to see group videos or rejoin unless someone adds you back.")
+        }
+    }
+
+    private func leaveGroup() {
+        guard let currentUserId = authManager.currentUser?.uid else { return }
+
+        let db = Firestore.firestore()
+        var updatedMembers = group.members
+        if let memberIndex = updatedMembers.firstIndex(of: currentUserId) {
+            updatedMembers.remove(at: memberIndex)
+
+            db.collection("groups").document(group.id).updateData([
+                "members": updatedMembers,
+                "memberCount": updatedMembers.count
+            ]) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ Error leaving group: \(error.localizedDescription)")
+                    } else {
+                        print("✅ Successfully left group")
+                        // Dismiss this view and go back to groups list
+                        self.presentationMode.wrappedValue.dismiss()
+                    }
+                }
             }
         }
     }
@@ -610,17 +668,8 @@ struct GroupMemberRow: View {
                     Text(member.displayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
-
-                    Text(member.email)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                // Member indicator
-                Image(systemName: "person.circle")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
