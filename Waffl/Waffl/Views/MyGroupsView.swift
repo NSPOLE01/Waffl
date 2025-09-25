@@ -228,10 +228,15 @@ struct GroupVideosView: View {
 
                     Spacer()
 
-                    // Placeholder for balance
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .opacity(0)
+                    // Edit button
+                    Button(action: {
+                        // TODO: Implement edit functionality
+                        print("Edit group button tapped")
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
