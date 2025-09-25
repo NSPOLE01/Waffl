@@ -347,6 +347,8 @@ struct GroupMembersView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var members: [WaffleUser] = []
     @State private var isLoadingMembers = true
+    @State private var isAccordionExpanded = false
+    @State private var showingAddUsers = false
 
     var body: some View {
         NavigationView {
@@ -363,58 +365,119 @@ struct GroupMembersView: View {
 
                     Spacer()
 
-                    Text("Group Members")
+                    Text(group.name)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.primary)
 
                     Spacer()
 
-                    // Placeholder for balance
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .opacity(0)
+                    // Add users button
+                    Button(action: {
+                        showingAddUsers = true
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.purple)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
 
-                // Members content
-                if isLoadingMembers {
-                    Spacer()
+                ScrollView {
                     VStack(spacing: 16) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        Text("Loading group members...")
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                } else if members.isEmpty {
-                    Spacer()
-                    VStack(spacing: 20) {
-                        Image(systemName: "person.2.slash")
-                            .font(.system(size: 50))
-                            .foregroundColor(.purple.opacity(0.6))
+                        // Members Accordion
+                        VStack(spacing: 0) {
+                            // Accordion Header
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isAccordionExpanded.toggle()
+                                }
+                            }) {
+                                HStack(spacing: 16) {
+                                    // Group icon
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.purple.opacity(0.1))
+                                            .frame(width: 40, height: 40)
 
-                        Text("No Members Found")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.primary)
+                                        Image(systemName: "person.3.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundColor(.purple)
+                                    }
 
-                        Text("Unable to load group members")
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(members) { member in
-                                GroupMemberRow(member: member)
+                                    // Title and count
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Group Members")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(.primary)
+
+                                        if isLoadingMembers {
+                                            Text("Loading...")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
+                                        } else {
+                                            Text("\(members.count) member\(members.count == 1 ? "" : "s")")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    // Chevron
+                                    Image(systemName: isAccordionExpanded ? "chevron.up" : "chevron.down")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .background(Color(UIColor.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+
+                            // Accordion Content
+                            if isAccordionExpanded {
+                                VStack(spacing: 8) {
+                                    if isLoadingMembers {
+                                        VStack(spacing: 16) {
+                                            ProgressView()
+                                                .scaleEffect(1.2)
+                                            Text("Loading group members...")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .padding(.vertical, 20)
+                                    } else if members.isEmpty {
+                                        VStack(spacing: 16) {
+                                            Image(systemName: "person.2.slash")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.purple.opacity(0.6))
+
+                                            Text("No Members Found")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                        }
+                                        .padding(.vertical, 20)
+                                    } else {
+                                        ForEach(members) { member in
+                                            GroupMemberRow(
+                                                member: member,
+                                                onDelete: {
+                                                    removeMemberFromGroup(member)
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                                .padding(.top, 8)
+                                .animation(.easeInOut(duration: 0.3), value: members.count)
                             }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
+
+                        Spacer()
                     }
                 }
             }
@@ -426,6 +489,40 @@ struct GroupMembersView: View {
         }
         .refreshable {
             loadGroupMembers()
+        }
+        .fullScreenCover(isPresented: $showingAddUsers) {
+            AddUsersToGroupView(group: group) {
+                loadGroupMembers() // Refresh members when users are added
+            }
+        }
+    }
+
+    private func removeMemberFromGroup(_ member: WaffleUser) {
+        // Remove from local array first for immediate UI update
+        if let index = members.firstIndex(where: { $0.id == member.id }) {
+            members.remove(at: index)
+        }
+
+        // Update Firebase
+        let db = Firestore.firestore()
+        var updatedMembers = group.members
+        if let memberIndex = updatedMembers.firstIndex(of: member.uid) {
+            updatedMembers.remove(at: memberIndex)
+
+            db.collection("groups").document(group.id).updateData([
+                "members": updatedMembers,
+                "memberCount": updatedMembers.count
+            ]) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ Error removing member from group: \(error.localizedDescription)")
+                        // Revert local change on error
+                        self.members.append(member)
+                    } else {
+                        print("✅ Member removed from group successfully")
+                    }
+                }
+            }
         }
     }
 
@@ -465,49 +562,346 @@ struct GroupMembersView: View {
 // MARK: - Group Member Row
 struct GroupMemberRow: View {
     let member: WaffleUser
+    let onDelete: () -> Void
+    @State private var dragOffset: CGFloat = 0
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Profile Picture
-            AsyncImage(url: URL(string: member.profileImageURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-            } placeholder: {
-                Circle()
-                    .fill(Color.purple.opacity(0.1))
-                    .frame(width: 50, height: 50)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.purple)
-                    )
+        ZStack {
+            // Delete button background (revealed on swipe)
+            HStack {
+                Spacer()
+                Button(action: {
+                    showingDeleteConfirmation = true
+                }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 60, height: 60)
+                        .background(Color.red)
+                        .cornerRadius(12)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
+            .opacity(dragOffset < -50 ? 1.0 : 0.0)
+            .animation(.easeInOut(duration: 0.2), value: dragOffset)
 
-            // Member Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(member.displayName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+            // Main member content
+            HStack(spacing: 16) {
+                // Profile Picture
+                AsyncImage(url: URL(string: member.profileImageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                } placeholder: {
+                    Circle()
+                        .fill(Color.purple.opacity(0.1))
+                        .frame(width: 50, height: 50)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.purple)
+                        )
+                }
 
-                Text(member.email)
+                // Member Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(member.displayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Text(member.email)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Member indicator
+                Image(systemName: "person.circle")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Member indicator
-            Image(systemName: "person.circle")
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(UIColor.systemBackground))
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+            .offset(x: dragOffset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        // Only allow left swipe (negative translation)
+                        let newOffset = min(0, value.translation.width)
+                        dragOffset = max(newOffset, -80) // Limit swipe distance
+                    }
+                    .onEnded { value in
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            if dragOffset < -50 {
+                                // Keep slightly open to show delete button
+                                dragOffset = -70
+                            } else {
+                                // Snap back to original position
+                                dragOffset = 0
+                            }
+                        }
+                    }
+            )
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .alert("Remove Member", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    dragOffset = 0
+                }
+            }
+            Button("Remove", role: .destructive) {
+                onDelete()
+                withAnimation(.easeOut(duration: 0.3)) {
+                    dragOffset = 0
+                }
+            }
+        } message: {
+            Text("Are you sure you want to remove \(member.displayName) from this group?")
+        }
+    }
+}
+
+// MARK: - Add Users to Group View
+struct AddUsersToGroupView: View {
+    let group: WaffleGroup
+    let onUsersAdded: () -> Void
+    @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
+    @State private var availableUsers: [WaffleUser] = []
+    @State private var selectedUsers: Set<String> = []
+    @State private var isLoadingUsers = true
+    @State private var isAddingUsers = false
+
+    private var isButtonEnabled: Bool {
+        !selectedUsers.isEmpty
+    }
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.purple)
+                    }
+
+                    Spacer()
+
+                    Text("Add Members")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // Placeholder for balance
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .opacity(0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+
+                VStack(spacing: 20) {
+                    // Instructions
+                    VStack(spacing: 8) {
+                        Text("Select Friends")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.primary)
+
+                        Text("Choose friends to add to \(group.name)")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 20)
+
+                    // Users list
+                    if isLoadingUsers {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Loading your friends...")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 40)
+                    } else if availableUsers.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.2.slash")
+                                .font(.system(size: 48))
+                                .foregroundColor(.secondary)
+
+                            Text("No Friends Available")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.primary)
+
+                            Text("All your friends are already in this group or you have no friends to add")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.top, 40)
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 6) {
+                                ForEach(availableUsers) { user in
+                                    FriendSelectionRow(
+                                        friend: user,
+                                        isSelected: selectedUsers.contains(user.uid)
+                                    ) {
+                                        toggleUserSelection(user.uid)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.top, 10)
+                        }
+                    }
+
+                    Spacer()
+
+                    // Add Members Button
+                    Button(action: {
+                        addSelectedUsersToGroup()
+                    }) {
+                        HStack {
+                            if isAddingUsers {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                                Text("Adding...")
+                            } else {
+                                Text("Add to Group")
+                            }
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(isButtonEnabled ? Color.purple : Color.gray)
+                        .cornerRadius(12)
+                    }
+                    .disabled(!isButtonEnabled || isAddingUsers)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 40)
+                }
+                .padding(.horizontal, 24)
+            }
+            .navigationBarHidden(true)
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            loadAvailableUsers()
+        }
+    }
+
+    private func toggleUserSelection(_ userId: String) {
+        if selectedUsers.contains(userId) {
+            selectedUsers.remove(userId)
+        } else {
+            selectedUsers.insert(userId)
+        }
+    }
+
+    private func loadAvailableUsers() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            isLoadingUsers = false
+            return
+        }
+
+        isLoadingUsers = true
+        let db = Firestore.firestore()
+
+        // Get the user's following list
+        db.collection("users").document(currentUserId).collection("following").getDocuments { snapshot, error in
+            if let error = error {
+                print("❌ Error loading following: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isLoadingUsers = false
+                }
+                return
+            }
+
+            guard let documents = snapshot?.documents else {
+                DispatchQueue.main.async {
+                    self.isLoadingUsers = false
+                }
+                return
+            }
+
+            let followingIds = documents.compactMap { $0.documentID }
+
+            if followingIds.isEmpty {
+                DispatchQueue.main.async {
+                    self.availableUsers = []
+                    self.isLoadingUsers = false
+                }
+                return
+            }
+
+            // Fetch the actual user documents
+            db.collection("users").whereField("uid", in: followingIds).getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ Error loading friend details: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.isLoadingUsers = false
+                    }
+                    return
+                }
+
+                let allFriends = snapshot?.documents.compactMap { document in
+                    try? WaffleUser(from: document)
+                } ?? []
+
+                // Filter out users already in the group
+                let availableUsers = allFriends.filter { friend in
+                    !self.group.members.contains(friend.uid)
+                }
+
+                DispatchQueue.main.async {
+                    self.availableUsers = availableUsers
+                    self.isLoadingUsers = false
+                }
+            }
+        }
+    }
+
+    private func addSelectedUsersToGroup() {
+        guard !selectedUsers.isEmpty else { return }
+
+        isAddingUsers = true
+        let db = Firestore.firestore()
+
+        // Add selected users to group members
+        var updatedMembers = group.members
+        updatedMembers.append(contentsOf: Array(selectedUsers))
+
+        db.collection("groups").document(group.id).updateData([
+            "members": updatedMembers,
+            "memberCount": updatedMembers.count
+        ]) { error in
+            DispatchQueue.main.async {
+                self.isAddingUsers = false
+
+                if let error = error {
+                    print("❌ Error adding users to group: \(error.localizedDescription)")
+                } else {
+                    print("✅ Users added to group successfully")
+                    self.onUsersAdded()
+                    self.presentationMode.wrappedValue.dismiss()
+                }
+            }
+        }
     }
 }
 
