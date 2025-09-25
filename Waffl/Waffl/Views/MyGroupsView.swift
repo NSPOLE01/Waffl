@@ -388,53 +388,52 @@ struct GroupMembersView: View {
                         // Members Accordion
                         VStack(spacing: 0) {
                             // Accordion Header
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isAccordionExpanded.toggle()
+                            HStack(spacing: 16) {
+                                // Group icon
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.purple.opacity(0.1))
+                                        .frame(width: 40, height: 40)
+
+                                    Image(systemName: "person.3.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.purple)
                                 }
-                            }) {
-                                HStack(spacing: 16) {
-                                    // Group icon
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.purple.opacity(0.1))
-                                            .frame(width: 40, height: 40)
 
-                                        Image(systemName: "person.3.fill")
-                                            .font(.system(size: 18))
-                                            .foregroundColor(.purple)
+                                // Title and count
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Group Members")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+
+                                    if isLoadingMembers {
+                                        Text("Loading...")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.secondary)
+                                    } else {
+                                        Text("\(members.count) member\(members.count == 1 ? "" : "s")")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.secondary)
                                     }
-
-                                    // Title and count
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Group Members")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.primary)
-
-                                        if isLoadingMembers {
-                                            Text("Loading...")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.secondary)
-                                        } else {
-                                            Text("\(members.count) member\(members.count == 1 ? "" : "s")")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.secondary)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                    // Chevron
-                                    Image(systemName: isAccordionExpanded ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.secondary)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                                // Chevron
+                                Image(systemName: isAccordionExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .background(Color(UIColor.systemBackground))
                             .cornerRadius(12)
                             .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isAccordionExpanded.toggle()
+                                }
+                            }
 
                             // Accordion Content
                             if isAccordionExpanded {
