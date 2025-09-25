@@ -206,6 +206,7 @@ struct GroupVideosView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var videos: [WaffleVideo] = []
     @State private var isLoadingVideos = true
+    @State private var showingGroupMembers = false
 
     var body: some View {
         NavigationView {
@@ -217,7 +218,7 @@ struct GroupVideosView: View {
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.purple)
                     }
 
                     Spacer()
@@ -230,12 +231,11 @@ struct GroupVideosView: View {
 
                     // Edit button
                     Button(action: {
-                        // TODO: Implement edit functionality
-                        print("Edit group button tapped")
+                        showingGroupMembers = true
                     }) {
                         Image(systemName: "pencil")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.purple)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -291,6 +291,9 @@ struct GroupVideosView: View {
         .refreshable {
             loadGroupVideos()
         }
+        .fullScreenCover(isPresented: $showingGroupMembers) {
+            GroupMembersView(group: group)
+        }
     }
 
     private func loadGroupVideos() {
@@ -334,6 +337,177 @@ struct GroupVideosView: View {
                     print("✅ Loaded \(loadedVideos.count) group videos from this week")
                 }
             }
+    }
+}
+
+// MARK: - Group Members View
+struct GroupMembersView: View {
+    let group: WaffleGroup
+    @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
+    @State private var members: [WaffleUser] = []
+    @State private var isLoadingMembers = true
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.purple)
+                    }
+
+                    Spacer()
+
+                    Text("Group Members")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // Placeholder for balance
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .opacity(0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+
+                // Members content
+                if isLoadingMembers {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading group members...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                } else if members.isEmpty {
+                    Spacer()
+                    VStack(spacing: 20) {
+                        Image(systemName: "person.2.slash")
+                            .font(.system(size: 50))
+                            .foregroundColor(.purple.opacity(0.6))
+
+                        Text("No Members Found")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        Text("Unable to load group members")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(members) { member in
+                                GroupMemberRow(member: member)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            loadGroupMembers()
+        }
+        .refreshable {
+            loadGroupMembers()
+        }
+    }
+
+    private func loadGroupMembers() {
+        isLoadingMembers = true
+        let db = Firestore.firestore()
+
+        // Get member details for all user IDs in the group
+        db.collection("users")
+            .whereField("uid", in: group.members)
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoadingMembers = false
+
+                    if let error = error {
+                        print("❌ Error loading group members: \(error.localizedDescription)")
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else {
+                        print("⚠️ No group members found")
+                        self.members = []
+                        return
+                    }
+
+                    let loadedMembers = documents.compactMap { document in
+                        try? WaffleUser(from: document)
+                    }
+
+                    self.members = loadedMembers
+                    print("✅ Loaded \(loadedMembers.count) group members")
+                }
+            }
+    }
+}
+
+// MARK: - Group Member Row
+struct GroupMemberRow: View {
+    let member: WaffleUser
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // Profile Picture
+            AsyncImage(url: URL(string: member.profileImageURL)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 50, height: 50)
+                    .clipShape(Circle())
+            } placeholder: {
+                Circle()
+                    .fill(Color.purple.opacity(0.1))
+                    .frame(width: 50, height: 50)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.purple)
+                    )
+            }
+
+            // Member Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(member.displayName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+
+                Text(member.email)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Member indicator
+            Image(systemName: "person.circle")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
 
