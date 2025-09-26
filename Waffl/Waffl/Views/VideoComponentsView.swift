@@ -170,10 +170,15 @@ struct VideoCard: View {
             VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
         }
         .fullScreenCover(isPresented: $showingUserProfile) {
-            if video.authorId == authManager.currentUser?.uid {
-                AccountView(selectedTab: .constant(3)) // Show account view for current user
-            } else {
-                UserProfileLoadingView(authorId: video.authorId, authorName: video.authorName, authorAvatar: video.authorAvatar)
+            UserProfileLoadingView(authorId: video.authorId, authorName: video.authorName, authorAvatar: video.authorAvatar)
+        }
+        .onChange(of: showingUserProfile) { isShowing in
+            if isShowing && video.authorId == authManager.currentUser?.uid {
+                // If trying to show current user's profile, switch to Account tab instead
+                showingUserProfile = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: NSNotification.Name("SwitchToAccountTab"), object: nil)
+                }
             }
         }
     }
@@ -624,10 +629,15 @@ struct LikeUserRow: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .sheet(isPresented: $showingUserProfile) {
-            if user.uid == authManager.currentUser?.uid {
-                AccountView(selectedTab: .constant(3)) // Show account view for current user
-            } else {
-                UserProfileView(user: user)
+            UserProfileView(user: user)
+        }
+        .onChange(of: showingUserProfile) { isShowing in
+            if isShowing && user.uid == authManager.currentUser?.uid {
+                // If trying to show current user's profile, switch to Account tab instead
+                showingUserProfile = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: NSNotification.Name("SwitchToAccountTab"), object: nil)
+                }
             }
         }
     }
@@ -954,11 +964,14 @@ struct UserProfileLoadingView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(UIColor.systemBackground))
             } else if let user = user {
-                if user.uid == authManager.currentUser?.uid {
-                    AccountView(selectedTab: .constant(3)) // Show account view for current user
-                } else {
-                    UserProfileView(user: user)
-                }
+                UserProfileView(user: user)
+                    .onAppear {
+                        if user.uid == authManager.currentUser?.uid {
+                            // If loaded user is current user, switch to Account tab
+                            presentationMode.wrappedValue.dismiss()
+                            NotificationCenter.default.post(name: NSNotification.Name("SwitchToAccountTab"), object: nil)
+                        }
+                    }
             } else {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")

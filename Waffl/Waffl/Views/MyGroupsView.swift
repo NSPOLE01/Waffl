@@ -294,6 +294,10 @@ struct GroupVideosView: View {
         .fullScreenCover(isPresented: $showingGroupMembers) {
             GroupMembersView(group: group)
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToAccountTab"))) { _ in
+            // Dismiss this view when switching to Account tab
+            presentationMode.wrappedValue.dismiss()
+        }
     }
 
     private func loadGroupVideos() {
@@ -526,6 +530,10 @@ struct GroupMembersView: View {
             }
         } message: {
             Text("Are you sure you want to leave \(group.name)? You won't be able to see group videos or rejoin unless someone adds you back.")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToAccountTab"))) { _ in
+            // Dismiss this view when switching to Account tab
+            presentationMode.wrappedValue.dismiss()
         }
     }
 

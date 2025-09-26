@@ -46,5 +46,8 @@ struct HomeScreenView: View {
         }
         .accentColor(.purple)
         .navigationBarHidden(true)
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToAccountTab"))) { _ in
+            selectedTab = 4
+        }
     }
 }

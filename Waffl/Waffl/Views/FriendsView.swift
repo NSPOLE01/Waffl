@@ -431,16 +431,21 @@ struct FriendRowView: View {
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
         .fullScreenCover(isPresented: $showingUserProfile) {
-            if user.uid == authManager.currentUser?.uid {
-                AccountView(selectedTab: .constant(3)) // Show account view for current user
-            } else {
-                UserProfileView(user: user)
-                    .onDisappear {
-                        // Refresh the parent view when returning from profile
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            NotificationCenter.default.post(name: NSNotification.Name("RefreshFriendsView"), object: nil)
-                        }
+            UserProfileView(user: user)
+                .onDisappear {
+                    // Refresh the parent view when returning from profile
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NotificationCenter.default.post(name: NSNotification.Name("RefreshFriendsView"), object: nil)
                     }
+                }
+        }
+        .onChange(of: showingUserProfile) { isShowing in
+            if isShowing && user.uid == authManager.currentUser?.uid {
+                // If trying to show current user's profile, switch to Account tab instead
+                showingUserProfile = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: NSNotification.Name("SwitchToAccountTab"), object: nil)
+                }
             }
         }
     }
