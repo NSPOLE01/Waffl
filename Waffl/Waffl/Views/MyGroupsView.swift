@@ -211,7 +211,6 @@ struct GroupVideosView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header
                 HStack {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
