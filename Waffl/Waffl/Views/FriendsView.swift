@@ -366,17 +366,16 @@ struct FriendRowView: View {
     let isFollowing: Bool
     let onTap: () -> Void
     let onAction: () -> Void
+
+    @State private var showingUserProfile = false
+    @EnvironmentObject var authManager: AuthManager
     
     var body: some View {
         HStack(spacing: 12) {
-            // Profile Picture and User Info - NavigationLink area
-            NavigationLink(destination: UserProfileView(user: user)
-                .onDisappear {
-                    // Refresh the parent view when returning from profile
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        NotificationCenter.default.post(name: NSNotification.Name("RefreshFriendsView"), object: nil)
-                    }
-                }) {
+            // Profile Picture and User Info - Button area
+            Button(action: {
+                showingUserProfile = true
+            }) {
                 HStack(spacing: 12) {
                     AsyncImage(url: URL(string: user.profileImageURL)) { image in
                         image
@@ -431,6 +430,19 @@ struct FriendRowView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .fullScreenCover(isPresented: $showingUserProfile) {
+            if user.uid == authManager.currentUser?.uid {
+                AccountView(selectedTab: .constant(3)) // Show account view for current user
+            } else {
+                UserProfileView(user: user)
+                    .onDisappear {
+                        // Refresh the parent view when returning from profile
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            NotificationCenter.default.post(name: NSNotification.Name("RefreshFriendsView"), object: nil)
+                        }
+                    }
+            }
+        }
     }
 }
 

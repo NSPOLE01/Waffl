@@ -170,7 +170,11 @@ struct VideoCard: View {
             VideoPlayerView(video: video, isLiked: $isLiked, likeCount: $likeCount, viewCount: $viewCount)
         }
         .fullScreenCover(isPresented: $showingUserProfile) {
-            UserProfileLoadingView(authorId: video.authorId, authorName: video.authorName, authorAvatar: video.authorAvatar)
+            if video.authorId == authManager.currentUser?.uid {
+                AccountView(selectedTab: .constant(3)) // Show account view for current user
+            } else {
+                UserProfileLoadingView(authorId: video.authorId, authorName: video.authorName, authorAvatar: video.authorAvatar)
+            }
         }
     }
     
@@ -574,6 +578,7 @@ struct LikeUserRow: View {
     let isFollowing: Bool
     let onFollowToggle: () -> Void
     @State private var showingUserProfile = false
+    @EnvironmentObject var authManager: AuthManager
     
     var body: some View {
         HStack(spacing: 12) {
@@ -619,7 +624,11 @@ struct LikeUserRow: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .sheet(isPresented: $showingUserProfile) {
-            UserProfileView(user: user)
+            if user.uid == authManager.currentUser?.uid {
+                AccountView(selectedTab: .constant(3)) // Show account view for current user
+            } else {
+                UserProfileView(user: user)
+            }
         }
     }
 }
@@ -945,7 +954,11 @@ struct UserProfileLoadingView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(UIColor.systemBackground))
             } else if let user = user {
-                UserProfileView(user: user)
+                if user.uid == authManager.currentUser?.uid {
+                    AccountView(selectedTab: .constant(3)) // Show account view for current user
+                } else {
+                    UserProfileView(user: user)
+                }
             } else {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")

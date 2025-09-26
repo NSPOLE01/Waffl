@@ -357,8 +357,9 @@ struct UserFriendRowView: View {
     let user: WaffleUser
     let isFollowing: Bool
     let onAction: () -> Void
-    
+
     @State private var showingUserProfile = false
+    @EnvironmentObject var authManager: AuthManager
     
     var body: some View {
         HStack(spacing: 12) {
@@ -421,7 +422,11 @@ struct UserFriendRowView: View {
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
         .fullScreenCover(isPresented: $showingUserProfile) {
-            UserProfileView(user: user)
+            if user.uid == authManager.currentUser?.uid {
+                AccountView(selectedTab: .constant(3)) // Show account view for current user
+            } else {
+                UserProfileView(user: user)
+            }
         }
     }
 }
