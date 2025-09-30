@@ -21,6 +21,9 @@ struct CreateVideoView: View {
     @State private var showingSuccessMessage = false
     @State private var hasPostedToday = false
     @State private var isCheckingDailyLimit = true
+    @State private var userGroups: [WaffleGroup] = []
+    @State private var selectedGroup: WaffleGroup?
+    @State private var isLoadingGroups = false
     
     var body: some View {
         NavigationView {
@@ -133,19 +136,96 @@ struct CreateVideoView: View {
                                         .foregroundColor(.green)
                                 }
                             } else {
-                                Button(action: {
-                                    uploadVideo()
-                                }) {
-                                    HStack {
-                                        Image(systemName: "icloud.and.arrow.up")
-                                        Text("Share Video")
-                                            .font(.system(size: 18, weight: .semibold))
+                                VStack(spacing: 16) {
+                                    // Group selection
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Share to Group (Optional)")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.primary)
+
+                                        if isLoadingGroups {
+                                            HStack {
+                                                ProgressView()
+                                                    .scaleEffect(0.8)
+                                                Text("Loading groups...")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(.vertical, 8)
+                                        } else if userGroups.isEmpty {
+                                            Text("No groups available")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
+                                                .padding(.vertical, 8)
+                                        } else {
+                                            ScrollView(.horizontal, showsIndicators: false) {
+                                                HStack(spacing: 12) {
+                                                    // "None" option
+                                                    Button(action: {
+                                                        selectedGroup = nil
+                                                    }) {
+                                                        VStack(spacing: 4) {
+                                                            Image(systemName: "globe")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(selectedGroup == nil ? .white : .purple)
+                                                            Text("Public")
+                                                                .font(.system(size: 12, weight: .medium))
+                                                                .foregroundColor(selectedGroup == nil ? .white : .purple)
+                                                        }
+                                                        .frame(width: 80, height: 60)
+                                                        .background(selectedGroup == nil ? Color.purple : Color.purple.opacity(0.1))
+                                                        .cornerRadius(12)
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 12)
+                                                                .stroke(Color.purple, lineWidth: selectedGroup == nil ? 0 : 1)
+                                                        )
+                                                    }
+
+                                                    // Group options
+                                                    ForEach(userGroups) { group in
+                                                        Button(action: {
+                                                            selectedGroup = group
+                                                        }) {
+                                                            VStack(spacing: 4) {
+                                                                Image(systemName: "person.3.fill")
+                                                                    .font(.system(size: 20))
+                                                                    .foregroundColor(selectedGroup?.id == group.id ? .white : .purple)
+                                                                Text(group.name)
+                                                                    .font(.system(size: 12, weight: .medium))
+                                                                    .foregroundColor(selectedGroup?.id == group.id ? .white : .purple)
+                                                                    .lineLimit(1)
+                                                            }
+                                                            .frame(width: 80, height: 60)
+                                                            .background(selectedGroup?.id == group.id ? Color.purple : Color.purple.opacity(0.1))
+                                                            .cornerRadius(12)
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 12)
+                                                                    .stroke(Color.purple, lineWidth: selectedGroup?.id == group.id ? 0 : 1)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                .padding(.horizontal, 4)
+                                            }
+                                        }
                                     }
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 54)
-                                    .background(Color.purple)
-                                    .cornerRadius(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    // Share button
+                                    Button(action: {
+                                        uploadVideo()
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "icloud.and.arrow.up")
+                                            Text(selectedGroup == nil ? "Share Publicly" : "Share to \(selectedGroup!.name)")
+                                                .font(.system(size: 18, weight: .semibold))
+                                        }
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 54)
+                                        .background(Color.purple)
+                                        .cornerRadius(12)
+                                    }
                                 }
                             }
                             
@@ -181,6 +261,7 @@ struct CreateVideoView: View {
         }
         .onAppear {
             checkDailyLimit()
+            loadUserGroups()
         }
     }
     
@@ -218,7 +299,38 @@ struct CreateVideoView: View {
                 }
             }
     }
-    
+
+    private func loadUserGroups() {
+        guard let currentUserId = authManager.currentUser?.uid else {
+            print("❌ No current user found")
+            return
+        }
+
+        isLoadingGroups = true
+        let db = Firestore.firestore()
+
+        // Load groups where the current user is a member
+        db.collection("groups")
+            .whereField("members", arrayContains: currentUserId)
+            .getDocuments { snapshot, error in
+                DispatchQueue.main.async {
+                    self.isLoadingGroups = false
+
+                    if let error = error {
+                        print("❌ Error loading user groups: \(error.localizedDescription)")
+                        return
+                    }
+
+                    let loadedGroups = snapshot?.documents.compactMap { document in
+                        try? WaffleGroup(from: document)
+                    } ?? []
+
+                    self.userGroups = loadedGroups
+                    print("✅ Loaded \(loadedGroups.count) groups for video sharing")
+                }
+            }
+    }
+
     private func uploadVideo() {
         guard let videoURL = recordedVideoURL,
               let currentUser = authManager.currentUser else {
@@ -272,7 +384,8 @@ struct CreateVideoView: View {
                     videoId: videoId,
                     videoURL: downloadURL.absoluteString,
                     duration: videoDuration,
-                    authorId: currentUser.uid
+                    authorId: currentUser.uid,
+                    groupId: self.selectedGroup?.id
                 )
             }
         }
@@ -286,7 +399,7 @@ struct CreateVideoView: View {
         }
     }
     
-    private func saveVideoToFirestore(videoId: String, videoURL: String, duration: Int, authorId: String) {
+    private func saveVideoToFirestore(videoId: String, videoURL: String, duration: Int, authorId: String, groupId: String?) {
         guard let currentUserProfile = authManager.currentUserProfile else {
             print("❌ No current user profile")
             DispatchQueue.main.async {
@@ -303,7 +416,8 @@ struct CreateVideoView: View {
             authorName: currentUserProfile.displayName,
             authorAvatar: currentUserProfile.profileImageURL.isEmpty ? "person.circle.fill" : currentUserProfile.profileImageURL,
             videoURL: videoURL,
-            duration: duration
+            duration: duration,
+            groupId: groupId
         )
         
         db.collection("videos").document(videoId).setData(video.toDictionary()) { error in

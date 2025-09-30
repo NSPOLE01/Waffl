@@ -685,6 +685,7 @@ struct WaffleVideo: Identifiable, Codable {
     let isLikedByCurrentUser: Bool
     let viewCount: Int
     let commentCount: Int
+    let groupId: String?
     
     // Initialize from Firestore document
     init(from document: DocumentSnapshot, currentUserId: String? = nil) throws {
@@ -710,6 +711,7 @@ struct WaffleVideo: Identifiable, Codable {
         self.likeCount = data?["likeCount"] as? Int ?? 0
         self.viewCount = data?["viewCount"] as? Int ?? 0
         self.commentCount = data?["commentCount"] as? Int ?? 0
+        self.groupId = data?["groupId"] as? String
         
         // Check if current user liked this video
         if let currentUserId = currentUserId,
@@ -721,7 +723,7 @@ struct WaffleVideo: Identifiable, Codable {
     }
     
     // Initialize with parameters (for creating new videos)
-    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false, likeCount: Int = 0, isLikedByCurrentUser: Bool = false, viewCount: Int = 0, commentCount: Int = 0) {
+    init(id: String = UUID().uuidString, authorId: String, authorName: String, authorAvatar: String, videoURL: String, thumbnailURL: String? = nil, duration: Int, uploadDate: Date = Date(), isWatched: Bool = false, likeCount: Int = 0, isLikedByCurrentUser: Bool = false, viewCount: Int = 0, commentCount: Int = 0, groupId: String? = nil) {
         self.id = id
         self.authorId = authorId
         self.authorName = authorName
@@ -735,6 +737,7 @@ struct WaffleVideo: Identifiable, Codable {
         self.isLikedByCurrentUser = isLikedByCurrentUser
         self.viewCount = viewCount
         self.commentCount = commentCount
+        self.groupId = groupId
     }
     
     // Convert to dictionary for Firestore
@@ -755,6 +758,10 @@ struct WaffleVideo: Identifiable, Codable {
         
         if let thumbnailURL = thumbnailURL {
             dict["thumbnailURL"] = thumbnailURL
+        }
+
+        if let groupId = groupId {
+            dict["groupId"] = groupId
         }
         
         return dict

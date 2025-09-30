@@ -311,9 +311,9 @@ struct GroupVideosView: View {
         let calendar = Calendar.current
         let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
 
-        // Get videos from group members posted this week
+        // Get videos specifically shared to this group posted this week
         db.collection("videos")
-            .whereField("authorId", in: group.members)
+            .whereField("groupId", isEqualTo: group.id)
             .whereField("uploadDate", isGreaterThanOrEqualTo: Timestamp(date: startOfWeek))
             .order(by: "uploadDate", descending: true)
             .getDocuments { snapshot, error in
