@@ -10,6 +10,15 @@ import Firebase
 import FirebaseFirestore
 import FirebaseStorage
 import AVFoundation
+import AVKit
+
+// Forward declaration for WaffleGroup to avoid conflicts
+struct CreateVideoGroup: Identifiable {
+    let id: String
+    let name: String
+    let memberCount: Int
+}
+
 
 struct CreateVideoView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -21,9 +30,12 @@ struct CreateVideoView: View {
     @State private var showingSuccessMessage = false
     @State private var hasPostedToday = false
     @State private var isCheckingDailyLimit = true
-    @State private var userGroups: [WaffleGroup] = []
-    @State private var selectedGroup: WaffleGroup?
+    @State private var userGroups: [CreateVideoGroup] = []
+    @State private var selectedGroup: CreateVideoGroup?
     @State private var isLoadingGroups = false
+    @State private var showingVideoReview = false
+    @State private var videoApproved = false
+    @State private var showingGroupSelection = false
     
     var body: some View {
         NavigationView {
@@ -58,13 +70,29 @@ struct CreateVideoView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     } else if let videoURL = recordedVideoURL {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.green)
-                        
-                        Text("Video recorded successfully!")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.green)
+                        if videoApproved {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.green)
+
+                            Text("Video approved and ready to share!")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.green)
+                        } else {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.purple.opacity(0.1))
+                                    .frame(width: 120, height: 120)
+
+                                Image(systemName: "play.circle.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.purple)
+                            }
+
+                            Text("Video recorded! Review before sharing")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
                     } else {
                         ZStack {
                             Circle()
@@ -113,13 +141,41 @@ struct CreateVideoView: View {
                             .background(Color.purple)
                             .cornerRadius(12)
                         }
+                    } else if !videoApproved {
+                        // Video review buttons
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                showingVideoReview = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "play.fill")
+                                    Text("Review Video")
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 54)
+                                .background(Color.purple)
+                                .cornerRadius(12)
+                            }
+
+                            Button(action: {
+                                recordedVideoURL = nil
+                                showingSuccessMessage = false
+                                videoApproved = false
+                            }) {
+                                Text("Record Again")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.purple)
+                            }
+                        }
                     } else {
                         VStack(spacing: 12) {
                             if isUploading {
                                 VStack(spacing: 8) {
                                     ProgressView(value: uploadProgress)
                                         .progressViewStyle(LinearProgressViewStyle(tint: .purple))
-                                    
+
                                     Text("Uploading... \(Int(uploadProgress * 100))%")
                                         .font(.system(size: 14))
                                         .foregroundColor(.secondary)
@@ -130,118 +186,34 @@ struct CreateVideoView: View {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 30))
                                         .foregroundColor(.green)
-                                    
+
                                     Text("Video uploaded successfully!")
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.green)
                                 }
                             } else {
-                                VStack(spacing: 16) {
-                                    // Group selection
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("Share to Group (Optional)")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.primary)
-
-                                        if isLoadingGroups {
-                                            HStack {
-                                                ProgressView()
-                                                    .scaleEffect(0.8)
-                                                Text("Loading groups...")
-                                                    .font(.system(size: 14))
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            .padding(.vertical, 8)
-                                        } else if userGroups.isEmpty {
-                                            Text("No groups available")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.secondary)
-                                                .padding(.vertical, 8)
-                                        } else {
-                                            ScrollView(.horizontal, showsIndicators: false) {
-                                                HStack(spacing: 12) {
-                                                    // "None" option
-                                                    Button(action: {
-                                                        selectedGroup = nil
-                                                    }) {
-                                                        VStack(spacing: 4) {
-                                                            Image(systemName: "globe")
-                                                                .font(.system(size: 20))
-                                                                .foregroundColor(selectedGroup == nil ? .white : .purple)
-                                                            Text("Public")
-                                                                .font(.system(size: 12, weight: .medium))
-                                                                .foregroundColor(selectedGroup == nil ? .white : .purple)
-                                                        }
-                                                        .frame(width: 80, height: 60)
-                                                        .background(selectedGroup == nil ? Color.purple : Color.purple.opacity(0.1))
-                                                        .cornerRadius(12)
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 12)
-                                                                .stroke(Color.purple, lineWidth: selectedGroup == nil ? 0 : 1)
-                                                        )
-                                                    }
-
-                                                    // Group options
-                                                    ForEach(userGroups) { group in
-                                                        Button(action: {
-                                                            selectedGroup = group
-                                                        }) {
-                                                            VStack(spacing: 4) {
-                                                                Image(systemName: "person.3.fill")
-                                                                    .font(.system(size: 20))
-                                                                    .foregroundColor(selectedGroup?.id == group.id ? .white : .purple)
-                                                                Text(group.name)
-                                                                    .font(.system(size: 12, weight: .medium))
-                                                                    .foregroundColor(selectedGroup?.id == group.id ? .white : .purple)
-                                                                    .lineLimit(1)
-                                                            }
-                                                            .frame(width: 80, height: 60)
-                                                            .background(selectedGroup?.id == group.id ? Color.purple : Color.purple.opacity(0.1))
-                                                            .cornerRadius(12)
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color.purple, lineWidth: selectedGroup?.id == group.id ? 0 : 1)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                                .padding(.horizontal, 4)
-                                            }
-                                        }
+                                // After video is approved, show share button
+                                Button(action: {
+                                    showingGroupSelection = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "square.and.arrow.up")
+                                        Text("Choose Where to Share")
+                                            .font(.system(size: 18, weight: .semibold))
                                     }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                    // Share button
-                                    Button(action: {
-                                        uploadVideo()
-                                    }) {
-                                        HStack {
-                                            Image(systemName: "icloud.and.arrow.up")
-                                            Text(selectedGroup == nil ? "Share Publicly" : "Share to \(selectedGroup!.name)")
-                                                .font(.system(size: 18, weight: .semibold))
-                                        }
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 54)
-                                        .background(Color.purple)
-                                        .cornerRadius(12)
-                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 54)
+                                    .background(Color.purple)
+                                    .cornerRadius(12)
                                 }
                             }
-                            
-                            if !isUploading && !showingSuccessMessage {
+
+                            if showingSuccessMessage {
                                 Button(action: {
                                     recordedVideoURL = nil
                                     showingSuccessMessage = false
-                                }) {
-                                    Text("Record Again")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.purple)
-                                }
-                            } else if showingSuccessMessage {
-                                Button(action: {
-                                    recordedVideoURL = nil
-                                    showingSuccessMessage = false
+                                    videoApproved = false
                                 }) {
                                     Text("Record New Video")
                                         .font(.system(size: 16, weight: .medium))
@@ -258,6 +230,30 @@ struct CreateVideoView: View {
         }
         .sheet(isPresented: $showingCamera) {
             CameraView(videoURL: $recordedVideoURL)
+        }
+        .sheet(isPresented: $showingVideoReview) {
+            VideoReviewView(videoURL: recordedVideoURL, onApprove: {
+                videoApproved = true
+                showingVideoReview = false
+            }, onReject: {
+                recordedVideoURL = nil
+                showingVideoReview = false
+                videoApproved = false
+            })
+        }
+        .sheet(isPresented: $showingGroupSelection) {
+            GroupSelectionSheet(
+                userGroups: userGroups,
+                selectedGroup: $selectedGroup,
+                isLoadingGroups: isLoadingGroups,
+                onShare: {
+                    showingGroupSelection = false
+                    uploadVideo()
+                },
+                onCancel: {
+                    showingGroupSelection = false
+                }
+            )
         }
         .onAppear {
             checkDailyLimit()
@@ -321,8 +317,11 @@ struct CreateVideoView: View {
                         return
                     }
 
-                    let loadedGroups = snapshot?.documents.compactMap { document in
-                        try? WaffleGroup(from: document)
+                    let loadedGroups = snapshot?.documents.compactMap { document -> CreateVideoGroup? in
+                        let data = document.data()
+                        guard let name = data["name"] as? String else { return nil }
+                        let memberCount = data["memberCount"] as? Int ?? 0
+                        return CreateVideoGroup(id: document.documentID, name: name, memberCount: memberCount)
                     } ?? []
 
                     self.userGroups = loadedGroups
@@ -461,5 +460,227 @@ struct CreateVideoView: View {
         let duration = asset.duration
         let seconds = CMTimeGetSeconds(duration)
         return Int(seconds.rounded())
+    }
+}
+
+// MARK: - Video Review View
+struct VideoReviewView: View {
+    let videoURL: URL?
+    let onApprove: () -> Void
+    let onReject: () -> Void
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("Review Your Video")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.primary)
+                    .padding(.top, 20)
+
+                Spacer()
+
+                // Video player
+                if let videoURL = videoURL {
+                    VideoPlayer(player: AVPlayer(url: videoURL))
+                        .frame(height: 400)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 400)
+                        .cornerRadius(12)
+                        .overlay(
+                            Text("No video available")
+                                .foregroundColor(.secondary)
+                        )
+                        .padding(.horizontal)
+                }
+
+                Spacer()
+
+                // Action buttons
+                VStack(spacing: 16) {
+                    Button(action: onApprove) {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Approve & Continue")
+                                .font(.system(size: 18, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.green)
+                        .cornerRadius(12)
+                    }
+
+                    Button(action: onReject) {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Record Again")
+                                .font(.system(size: 18, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+            .navigationBarHidden(true)
+        }
+    }
+}
+
+// MARK: - Group Selection Sheet
+struct GroupSelectionSheet: View {
+    let userGroups: [CreateVideoGroup]
+    @Binding var selectedGroup: CreateVideoGroup?
+    let isLoadingGroups: Bool
+    let onShare: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text("Choose Where to Share")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+
+                    Text("Select a group or share publicly")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 20)
+
+                if isLoadingGroups {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading groups...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            // Public option
+                            Button(action: {
+                                selectedGroup = nil
+                            }) {
+                                HStack(spacing: 16) {
+                                    Image(systemName: "globe")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.purple)
+                                        .frame(width: 40, height: 40)
+                                        .background(Color.purple.opacity(0.1))
+                                        .cornerRadius(20)
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Share Publicly")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundColor(.primary)
+
+                                        Text("Visible to all your friends")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    if selectedGroup == nil {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.purple)
+                                    }
+                                }
+                                .padding(16)
+                                .background(selectedGroup == nil ? Color.purple.opacity(0.1) : Color(UIColor.systemBackground))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(selectedGroup == nil ? Color.purple : Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            // Group options
+                            ForEach(userGroups) { group in
+                                Button(action: {
+                                    selectedGroup = group
+                                }) {
+                                    HStack(spacing: 16) {
+                                        Image(systemName: "person.3.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.purple)
+                                            .frame(width: 40, height: 40)
+                                            .background(Color.purple.opacity(0.1))
+                                            .cornerRadius(20)
+
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(group.name)
+                                                .font(.system(size: 18, weight: .semibold))
+                                                .foregroundColor(.primary)
+
+                                            Text("\(group.memberCount) members")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        if selectedGroup?.id == group.id {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.purple)
+                                        }
+                                    }
+                                    .padding(16)
+                                    .background(selectedGroup?.id == group.id ? Color.purple.opacity(0.1) : Color(UIColor.systemBackground))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(selectedGroup?.id == group.id ? Color.purple : Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                    }
+
+                    // Action buttons
+                    VStack(spacing: 12) {
+                        Button(action: onShare) {
+                            HStack {
+                                Image(systemName: "icloud.and.arrow.up")
+                                Text(selectedGroup == nil ? "Share Publicly" : "Share to \(selectedGroup!.name)")
+                                    .font(.system(size: 18, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color.purple)
+                            .cornerRadius(12)
+                        }
+
+                        Button(action: onCancel) {
+                            Text("Cancel")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.purple)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 40)
+                }
+            }
+            .navigationBarHidden(true)
+        }
     }
 }
