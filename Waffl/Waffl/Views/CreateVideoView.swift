@@ -423,23 +423,31 @@ struct VideoReviewView: View {
     let onReject: () -> Void
 
     @State private var showingShareSelection = false
+    @State private var player: AVPlayer?
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
+            VStack(spacing: 15) {
                 Text("Review Your Video")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.primary)
-                    .padding(.top, 20)
+                    .padding(.top, 60)
 
                 Spacer()
 
                 // Video player
                 if let videoURL = videoURL {
-                    VideoPlayer(player: AVPlayer(url: videoURL))
-                        .frame(height: 400)
+                    VideoPlayer(player: player ?? AVPlayer())
+                        .frame(height: 500)
                         .cornerRadius(12)
                         .padding(.horizontal)
+                        .onAppear {
+                            player = AVPlayer(url: videoURL)
+                            player?.play()
+                        }
+                        .onDisappear {
+                            player?.pause()
+                        }
                 } else {
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
