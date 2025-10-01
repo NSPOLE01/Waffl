@@ -69,13 +69,19 @@ struct CreateVideoView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
-                    } else if let videoURL = recordedVideoURL {
-                        if videoApproved {
+                    } else if recordedVideoURL != nil {
+                        if isUploading {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Uploading your video...")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                        } else if showingSuccessMessage {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 60))
                                 .foregroundColor(.green)
 
-                            Text("Video approved and ready to share!")
+                            Text("Video uploaded successfully!")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.green)
                         } else {
@@ -89,7 +95,7 @@ struct CreateVideoView: View {
                                     .foregroundColor(.purple)
                             }
 
-                            Text("Video recorded! Review before sharing")
+                            Text("Video recorded! Processing...")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.primary)
                         }
@@ -141,85 +147,15 @@ struct CreateVideoView: View {
                             .background(Color.purple)
                             .cornerRadius(12)
                         }
-                    } else if !videoApproved {
-                        // Video review buttons
-                        VStack(spacing: 12) {
-                            Button(action: {
-                                showingVideoReview = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "play.fill")
-                                    Text("Review Video")
-                                        .font(.system(size: 18, weight: .semibold))
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 54)
-                                .background(Color.purple)
-                                .cornerRadius(12)
-                            }
-
-                            Button(action: {
-                                recordedVideoURL = nil
-                                showingSuccessMessage = false
-                                videoApproved = false
-                            }) {
-                                Text("Record Again")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.purple)
-                            }
-                        }
-                    } else {
-                        VStack(spacing: 12) {
-                            if isUploading {
-                                VStack(spacing: 8) {
-                                    ProgressView(value: uploadProgress)
-                                        .progressViewStyle(LinearProgressViewStyle(tint: .purple))
-
-                                    Text("Uploading... \(Int(uploadProgress * 100))%")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.horizontal, 16)
-                            } else if showingSuccessMessage {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 30))
-                                        .foregroundColor(.green)
-
-                                    Text("Video uploaded successfully!")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.green)
-                                }
-                            } else {
-                                // After video is approved, show share button
-                                Button(action: {
-                                    showingGroupSelection = true
-                                }) {
-                                    HStack {
-                                        Image(systemName: "square.and.arrow.up")
-                                        Text("Choose Where to Share")
-                                            .font(.system(size: 18, weight: .semibold))
-                                    }
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 54)
-                                    .background(Color.purple)
-                                    .cornerRadius(12)
-                                }
-                            }
-
-                            if showingSuccessMessage {
-                                Button(action: {
-                                    recordedVideoURL = nil
-                                    showingSuccessMessage = false
-                                    videoApproved = false
-                                }) {
-                                    Text("Record New Video")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.purple)
-                                }
-                            }
+                    } else if showingSuccessMessage {
+                        Button(action: {
+                            recordedVideoURL = nil
+                            showingSuccessMessage = false
+                            videoApproved = false
+                        }) {
+                            Text("Record New Video")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.purple)
                         }
                     }
                 }
@@ -231,15 +167,29 @@ struct CreateVideoView: View {
         .sheet(isPresented: $showingCamera) {
             CameraView(videoURL: $recordedVideoURL)
         }
+        .onChange(of: recordedVideoURL) { videoURL in
+            if videoURL != nil {
+                // Automatically go to review when video is recorded
+                showingVideoReview = true
+            }
+        }
         .sheet(isPresented: $showingVideoReview) {
-            VideoReviewView(videoURL: recordedVideoURL, onApprove: {
-                videoApproved = true
-                showingVideoReview = false
-            }, onReject: {
-                recordedVideoURL = nil
-                showingVideoReview = false
-                videoApproved = false
-            })
+            VideoReviewView(
+                videoURL: recordedVideoURL,
+                userGroups: userGroups,
+                selectedGroup: $selectedGroup,
+                isLoadingGroups: isLoadingGroups,
+                onApprove: {
+                    videoApproved = true
+                    showingVideoReview = false
+                    showingGroupSelection = true
+                },
+                onReject: {
+                    recordedVideoURL = nil
+                    showingVideoReview = false
+                    videoApproved = false
+                }
+            )
         }
         .sheet(isPresented: $showingGroupSelection) {
             GroupSelectionSheet(
@@ -466,8 +416,13 @@ struct CreateVideoView: View {
 // MARK: - Video Review View
 struct VideoReviewView: View {
     let videoURL: URL?
+    let userGroups: [CreateVideoGroup]
+    @Binding var selectedGroup: CreateVideoGroup?
+    let isLoadingGroups: Bool
     let onApprove: () -> Void
     let onReject: () -> Void
+
+    @State private var showingShareSelection = false
 
     var body: some View {
         NavigationView {
@@ -501,10 +456,12 @@ struct VideoReviewView: View {
 
                 // Action buttons
                 VStack(spacing: 16) {
-                    Button(action: onApprove) {
+                    Button(action: {
+                        showingShareSelection = true
+                    }) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                            Text("Approve & Continue")
+                            Text("Approve & Choose Where to Share")
                                 .font(.system(size: 18, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -531,6 +488,20 @@ struct VideoReviewView: View {
                 .padding(.bottom, 40)
             }
             .navigationBarHidden(true)
+        }
+        .sheet(isPresented: $showingShareSelection) {
+            GroupSelectionSheet(
+                userGroups: userGroups,
+                selectedGroup: $selectedGroup,
+                isLoadingGroups: isLoadingGroups,
+                onShare: {
+                    showingShareSelection = false
+                    onApprove()
+                },
+                onCancel: {
+                    showingShareSelection = false
+                }
+            )
         }
     }
 }
