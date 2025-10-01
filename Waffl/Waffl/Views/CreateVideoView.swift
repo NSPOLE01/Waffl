@@ -547,15 +547,11 @@ struct GroupSelectionSheet: View {
         NavigationView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text("Choose Where to Share")
+                    Text("Share Your Video")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.primary)
-
-                    Text("Select a group or share publicly")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
                 }
-                .padding(.top, 20)
+                .padding(.top, 30)
 
                 if isLoadingGroups {
                     Spacer()
