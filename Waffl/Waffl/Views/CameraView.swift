@@ -41,11 +41,12 @@ struct CameraView: View {
                     }) {
                         Image(systemName: "camera.rotate")
                             .font(.system(size: 20))
-                            .foregroundColor(.white)
+                            .foregroundColor(cameraManager.isRecording ? .gray : .white)
                             .padding()
                             .background(Color.black.opacity(0.5))
                             .cornerRadius(8)
                     }
+                    .disabled(cameraManager.isRecording)
                 }
                 .padding()
                 
@@ -132,6 +133,7 @@ struct CameraView: View {
                 .padding(.bottom, 40)
             }
             
+
             // Permission denied overlay
             if cameraManager.permissionDenied {
                 VStack(spacing: 20) {
@@ -213,7 +215,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var sessionConfigured = false
     @Published var recordingComplete = false
     @Published var autoStoppedVideoURL: URL?
-    
+
     var captureSession: AVCaptureSession?
     private var movieOutput: AVCaptureMovieFileOutput?
     private var currentCamera: AVCaptureDevice?
@@ -325,15 +327,15 @@ class CameraManager: NSObject, ObservableObject {
         }
         return
         #endif
-        
+
         guard let movieOutput = movieOutput else { return }
-        
+
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let outputURL = documentsPath.appendingPathComponent("recorded_video_\(Date().timeIntervalSince1970).mov")
         self.outputURL = outputURL
-        
+
         movieOutput.startRecording(to: outputURL, recordingDelegate: self)
-        
+
         DispatchQueue.main.async {
             self.isRecording = true
             self.recordingDuration = 0
@@ -351,19 +353,19 @@ class CameraManager: NSObject, ObservableObject {
             // Create a mock file URL for simulator testing
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let mockURL = documentsPath.appendingPathComponent("mock_video_\(Date().timeIntervalSince1970).mov")
-            
+
             // Create an empty file for testing
             try? Data().write(to: mockURL)
-            
+
             completion(mockURL)
         }
         return
         #endif
-        
+
         self.completionHandler = completion
         movieOutput?.stopRecording()
         stopTimer()
-        
+
         DispatchQueue.main.async {
             self.isRecording = false
         }
@@ -374,54 +376,59 @@ class CameraManager: NSObject, ObservableObject {
         print("📱 Camera flip not available on simulator")
         return
         #endif
-        
+
         guard let captureSession = captureSession,
               let currentCamera = currentCamera,
               sessionConfigured else {
             print("❌ Camera session not ready for flip")
             return
         }
-        
+
         // Perform camera flip on background queue to avoid blocking UI
         DispatchQueue.global(qos: .userInitiated).async {
             captureSession.beginConfiguration()
-            
+
             // Remove current video input
             let currentVideoInput = captureSession.inputs.first { input in
                 (input as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true
             }
-            
+
             if let videoInput = currentVideoInput {
                 captureSession.removeInput(videoInput)
             }
-            
+
             // Determine new camera position
             let newPosition: AVCaptureDevice.Position = currentCamera.position == .back ? .front : .back
-            
+
             guard let newCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition) else {
                 print("❌ No camera available for position: \(newPosition)")
                 captureSession.commitConfiguration()
                 return
             }
-            
+
             do {
                 let newVideoInput = try AVCaptureDeviceInput(device: newCamera)
                 if captureSession.canAddInput(newVideoInput) {
                     captureSession.addInput(newVideoInput)
-                    
+
                     // Update current camera on main queue
                     DispatchQueue.main.async {
                         self.currentCamera = newCamera
                     }
-                    
+
                     print("✅ Camera flipped to \(newPosition == .front ? "front" : "back")")
                 } else {
                     print("❌ Cannot add new camera input")
+                    // Re-add the original input if new one fails
+                    if let originalInput = try? AVCaptureDeviceInput(device: currentCamera),
+                       captureSession.canAddInput(originalInput) {
+                        captureSession.addInput(originalInput)
+                    }
                 }
             } catch {
                 print("❌ Error creating camera input for flip: \(error)")
             }
-            
+
             captureSession.commitConfiguration()
         }
     }
@@ -440,10 +447,10 @@ class CameraManager: NSObject, ObservableObject {
                 if self.recordingDuration >= 60 {
                     // Stop the timer first to prevent multiple calls
                     self.stopTimer()
-                    
+
                     // Stop recording - this will trigger the delegate method
                     self.movieOutput?.stopRecording()
-                    
+
                     DispatchQueue.main.async {
                         self.isRecording = false
                         self.recordingComplete = true
@@ -479,7 +486,7 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
                 }
             }
         }
-        
+
         DispatchQueue.main.async {
             self.isRecording = false
             self.recordingDuration = 0
