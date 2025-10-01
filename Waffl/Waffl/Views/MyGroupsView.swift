@@ -311,6 +311,9 @@ struct GroupVideosView: View {
         let calendar = Calendar.current
         let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
 
+        print("🔍 Looking for videos with groupId: \(group.id)")
+        print("🔍 Start of week: \(startOfWeek)")
+
         // Get videos specifically shared to this group posted this week
         db.collection("videos")
             .whereField("groupId", isEqualTo: group.id)
@@ -326,9 +329,15 @@ struct GroupVideosView: View {
                     }
 
                     guard let documents = snapshot?.documents else {
-                        print("⚠️ No group videos found")
+                        print("⚠️ No group videos found - snapshot or documents is nil")
                         self.videos = []
                         return
+                    }
+
+                    print("🔍 Found \(documents.count) documents in query result")
+                    for doc in documents {
+                        let data = doc.data()
+                        print("🔍 Document \(doc.documentID): groupId = \(data["groupId"] as? String ?? "nil"), uploadDate = \(data["uploadDate"] ?? "nil")")
                     }
 
                     let loadedVideos = documents.compactMap { document in

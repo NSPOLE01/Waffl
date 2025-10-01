@@ -329,6 +329,8 @@ struct CreateVideoView: View {
                 }
                 
                 // Save video metadata to Firestore
+                print("🔍 About to save video - selectedGroup: \(String(describing: self.selectedGroup))")
+                print("🔍 About to save video - selectedGroup.id: \(String(describing: self.selectedGroup?.id))")
                 self.saveVideoToFirestore(
                     videoId: videoId,
                     videoURL: downloadURL.absoluteString,
@@ -369,17 +371,21 @@ struct CreateVideoView: View {
             groupId: groupId
         )
         
-        db.collection("videos").document(videoId).setData(video.toDictionary()) { error in
+        let videoDict = video.toDictionary()
+        print("🔍 Video data being saved: \(videoDict)")
+        print("🔍 Group ID being saved: \(groupId ?? "nil")")
+
+        db.collection("videos").document(videoId).setData(videoDict) { error in
             DispatchQueue.main.async {
                 self.isUploading = false
-                
+
                 if let error = error {
                     print("❌ Error saving video to Firestore: \(error.localizedDescription)")
                 } else {
                     print("✅ Video saved successfully!")
                     self.showingSuccessMessage = true
                     self.hasPostedToday = true
-                    
+
                     // Update user's video count and streak
                     self.updateUserVideoCount()
                     self.authManager.updateStreakForVideoPost()
