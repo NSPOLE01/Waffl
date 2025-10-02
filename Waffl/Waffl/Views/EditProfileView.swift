@@ -42,7 +42,6 @@ struct EditProfileView: View {
                 
                 ScrollView {
                     VStack(spacing: 30) {
-                        // Profile Photo Section
                         VStack(spacing: 16) {
                             Text("Profile Photo")
                                 .font(.system(size: 20, weight: .semibold))
