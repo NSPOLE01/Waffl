@@ -66,11 +66,11 @@ struct VideoPlayerView: View {
                             VideoPlayer(player: player)
                                 .aspectRatio(9/16, contentMode: .fit)
                                 .clipped()
-                                .onTapGesture {
-                                    togglePlayPause()
-                                }
                                 .onTapGesture(count: 2) {
                                     handleDoubleTapLike()
+                                }
+                                .onTapGesture {
+                                    togglePlayPause()
                                 }
                         } else {
                             // Loading state
