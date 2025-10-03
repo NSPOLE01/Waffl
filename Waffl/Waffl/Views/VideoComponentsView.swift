@@ -62,18 +62,12 @@ struct VideoCard: View {
             ZStack {
                 VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
                     .contentShape(Rectangle())
-                    .simultaneousGesture(
-                        TapGesture(count: 2)
-                            .onEnded {
-                                handleDoubleTapLike()
-                            }
-                    )
-                    .simultaneousGesture(
-                        TapGesture()
-                            .onEnded {
-                                showingVideoPlayer = true
-                            }
-                    )
+                    .onTapGesture(count: 2) {
+                        handleDoubleTapLike()
+                    }
+                    .onTapGesture {
+                        showingVideoPlayer = true
+                    }
 
                 // Heart animation overlay
                 if showHeartAnimation {
@@ -768,34 +762,65 @@ struct WaffleVideo: Identifiable, Codable {
 // MARK: - Heart Animation View
 struct HeartAnimationView: View {
     @State private var isVisible = false
-    @State private var scale: CGFloat = 0.5
+    @State private var scale: CGFloat = 0.3
     @State private var opacity: Double = 0.0
-    
+    @State private var yOffset: CGFloat = 0
+
     var body: some View {
-        Image(systemName: "heart.fill")
-            .font(.system(size: 80, weight: .bold))
-            .foregroundColor(.red)
-            .scaleEffect(scale)
-            .opacity(opacity)
-            .onAppear {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    scale = 1.2
-                    opacity = 1.0
-                }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        scale = 1.0
-                    }
-                }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    withAnimation(.easeOut(duration: 0.4)) {
-                        scale = 0.8
-                        opacity = 0.0
-                    }
+        ZStack {
+            // Main heart
+            Image(systemName: "heart.fill")
+                .font(.system(size: 100, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        gradient: Gradient(colors: [.red, .pink]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .scaleEffect(scale)
+                .opacity(opacity)
+                .offset(y: yOffset)
+                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+
+            // Sparkle effects
+            ForEach(0..<6, id: \.self) { index in
+                Image(systemName: "sparkle")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white)
+                    .opacity(opacity * 0.8)
+                    .scaleEffect(scale * 0.6)
+                    .offset(
+                        x: CGFloat(cos(Double(index) * .pi / 3)) * 60,
+                        y: CGFloat(sin(Double(index) * .pi / 3)) * 60 + yOffset
+                    )
+                    .animation(.easeOut(duration: 0.6).delay(Double(index) * 0.05), value: scale)
+                    .animation(.easeOut(duration: 0.6).delay(Double(index) * 0.05), value: opacity)
+            }
+        }
+        .onAppear {
+            // Initial pop-in animation
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0)) {
+                scale = 1.3
+                opacity = 1.0
+            }
+
+            // Slight bounce back
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    scale = 1.0
                 }
             }
+
+            // Float up and fade out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation(.easeOut(duration: 0.6)) {
+                    scale = 0.8
+                    opacity = 0.0
+                    yOffset = -30
+                }
+            }
+        }
     }
 }
 
