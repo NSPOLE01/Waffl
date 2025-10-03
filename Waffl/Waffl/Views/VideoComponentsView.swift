@@ -33,7 +33,31 @@ struct VideoCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
+            // Author info section - moved to top
+            HStack(spacing: 12) {
+                Button(action: {
+                    print("👤 Profile tapped for: \(video.authorName)")
+                    showingUserProfile = true
+                }) {
+                    AuthorAvatarView(avatarString: video.authorAvatar)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Circle())
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(video.authorName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+
             // Video thumbnail/placeholder
             ZStack {
                 VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
@@ -50,107 +74,80 @@ struct VideoCard: View {
                                 showingVideoPlayer = true
                             }
                     )
-                
+
                 // Heart animation overlay
                 if showHeartAnimation {
                     HeartAnimationView()
                         .allowsHitTesting(false)
                 }
             }
-            
-            // Video info
-            HStack {
-                Button(action: {
-                    print("👤 Profile tapped for: \(video.authorName)")
-                    showingUserProfile = true
-                }) {
-                    AuthorAvatarView(avatarString: video.authorAvatar)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .contentShape(Circle())
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(video.authorName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
-                        .font(.system(size: 14))
+
+            // Stats section - moved below video with better spacing
+            HStack(spacing: 24) {
+                // View count with eye icon
+                HStack(spacing: 6) {
+                    Image(systemName: "eye")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.gray)
+
+                    Text("\(viewCount)")
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
                 }
-                
-                Spacer()
-                
-                // Views, likes, and comments section
-                HStack(spacing: 12) {
-                    // View count with eye icon
-                    HStack(spacing: 4) {
-                        Image(systemName: "eye")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.gray)
-                        
-                        Text("\(viewCount)")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Consume tap to prevent falling through
-                    }
-                    
-                    // Like section with separate buttons
-                    HStack(spacing: 8) {
-                        // Heart button for liking
-                        Button(action: {
-                            toggleLike()
-                        }) {
-                            Image(systemName: isLiked ? "heart.fill" : "heart")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(isLiked ? .red : .gray)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .contentShape(Rectangle())
-                        
-                        // Like count button for showing who liked
-                        if likeCount > 0 {
-                            Button(action: {
-                                showingLikesList = true
-                            }) {
-                                Text("\(likeCount)")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .contentShape(Rectangle())
-                        }
-                    }
-                    
-                    // Comments button with count
-                    HStack(spacing: 4) {
-                        Button(action: {
-                            showingComments = true
-                        }) {
-                            Image(systemName: "bubble.left")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.gray)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .contentShape(Rectangle())
-                        
-                        if commentCount > 0 {
-                            Text("\(commentCount)")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     // Consume tap to prevent falling through
                 }
+
+                // Like section with better spacing
+                HStack(spacing: 6) {
+                    // Heart button for liking
+                    Button(action: {
+                        toggleLike()
+                    }) {
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(isLiked ? .red : .gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .contentShape(Rectangle())
+
+                    // Like count button for showing who liked
+                    if likeCount > 0 {
+                        Button(action: {
+                            showingLikesList = true
+                        }) {
+                            Text("\(likeCount)")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
+                    }
+                }
+
+                // Comments section with better spacing
+                HStack(spacing: 6) {
+                    Button(action: {
+                        showingComments = true
+                    }) {
+                        Image(systemName: "bubble.left")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .contentShape(Rectangle())
+
+                    if commentCount > 0 {
+                        Text("\(commentCount)")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Spacer()
             }
+            .padding(.horizontal, 4)
         }
         .padding(16)
         .background(Color(UIColor.systemBackground))
