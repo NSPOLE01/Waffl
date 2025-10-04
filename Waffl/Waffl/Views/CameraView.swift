@@ -49,7 +49,7 @@ struct CameraView: View {
                     .disabled(cameraManager.isRecording)
                 }
                 .padding()
-                
+
                 Spacer()
                 
                 // Recording status

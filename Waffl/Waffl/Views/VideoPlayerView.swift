@@ -40,156 +40,177 @@ struct VideoPlayerView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.black
-                    .ignoresSafeArea()
+                // Full-screen video player
+                if let player = player {
+                    VideoPlayer(player: player)
+                        .ignoresSafeArea()
+                        .onTapGesture(count: 2) {
+                            handleDoubleTapLike()
+                        }
+                        .onTapGesture {
+                            togglePlayPause()
+                        }
+                } else {
+                    // Loading state
+                    Color.black
+                        .ignoresSafeArea()
+                        .overlay(
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                        )
+                }
 
-                VStack(spacing: 0) {
-                    // Close button
+                // Top overlay - Close button and user profile
+                VStack {
                     HStack {
+                        // Close button
                         Button(action: {
                             player?.pause()
                             presentationMode.wrappedValue.dismiss()
                         }) {
                             Image(systemName: "xmark")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
-                                .padding()
-                                .background(Color.black.opacity(0.6))
+                                .frame(width: 44, height: 44)
+                                .background(Color.black.opacity(0.7))
                                 .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.3), radius: 5)
                         }
-                        .padding(.leading, 20)
-                        .padding(.top, 20)
-                        
+
                         Spacer()
-                    }
-                    
-                    // Video Player
-                    ZStack {
-                        if let player = player {
-                            VideoPlayer(player: player)
-                                .aspectRatio(9/16, contentMode: .fit)
-                                .clipped()
-                                .onTapGesture(count: 2) {
-                                    handleDoubleTapLike()
-                                }
-                                .onTapGesture {
-                                    togglePlayPause()
-                                }
-                        } else {
-                            // Loading state
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.3))
-                                .aspectRatio(9/16, contentMode: .fit)
-                                .overlay(
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                        .scaleEffect(1.5)
-                                )
-                        }
-                        
-                        // Heart animation overlay
-                        if showHeartAnimation {
-                            HeartAnimationView()
-                                .allowsHitTesting(false)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Video Info and Controls
-                    VStack(spacing: 16) {
-                        // Author info
+
+                        // User profile info
                         HStack(spacing: 12) {
                             // Profile picture - use current user's if provided, otherwise use stored avatar
-                            if let currentUserProfile = currentUserProfile {
-                                if !currentUserProfile.profileImageURL.isEmpty {
-                                    AuthorAvatarView(avatarString: currentUserProfile.profileImageURL)
-                                } else {
-                                    AuthorAvatarView(avatarString: "person.circle.fill")
+                            if let currentUserProfile = currentUserProfile, !currentUserProfile.profileImageURL.isEmpty {
+                                AsyncImage(url: URL(string: currentUserProfile.profileImageURL)) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    Image(systemName: "person.circle.fill")
+                                        .foregroundColor(.white)
                                 }
+                                .frame(width: 50, height: 50)
+                                .clipShape(Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 2)
+                                )
+                                .shadow(color: .black.opacity(0.5), radius: 8)
                             } else {
                                 AuthorAvatarView(avatarString: video.authorAvatar)
+                                    .frame(width: 50, height: 50)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 2)
+                                    )
+                                    .shadow(color: .black.opacity(0.5), radius: 8)
                             }
-                            
+
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(video.authorName)
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.white)
-                                
+                                    .shadow(color: .black.opacity(0.7), radius: 3)
+
                                 Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .shadow(color: .black.opacity(0.7), radius: 3)
                             }
-                            
-                            Spacer()
                         }
-                        
-                        // Engagement metrics
-                        HStack(spacing: 24) {
-                            // View count
-                            HStack(spacing: 6) {
-                                Image(systemName: "eye")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.white)
-                                
-                                Text("\(viewCount)")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(.white)
-                            }
-                            
-                            Spacer()
-                            
-                            // Like and Comment section
-                            HStack(spacing: 24) {
-                                // Like section
-                                HStack(spacing: 8) {
-                                    // Heart button
-                                    Button(action: {
-                                        toggleLike()
-                                    }) {
-                                        Image(systemName: isLiked ? "heart.fill" : "heart")
-                                            .font(.system(size: 24, weight: .medium))
-                                            .foregroundColor(isLiked ? .red : .white)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, geometry.safeAreaInsets.top + 20)
 
-                                    // Like count button
-                                    if likeCount > 0 {
-                                        Button(action: {
-                                            showingLikesList = true
-                                        }) {
-                                            Text("\(likeCount)")
-                                                .font(.system(size: 18, weight: .medium))
-                                                .foregroundColor(.white)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
+                    Spacer()
+                }
+
+                // Bottom overlay - Stats and interactions
+                VStack {
+                    Spacer()
+
+                    HStack(spacing: 16) {
+                        // View count
+                        HStack(spacing: 8) {
+                            Image(systemName: "eye")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.white.opacity(0.8))
+
+                            Text("\(viewCount)")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.3), radius: 5)
+
+                        Spacer()
+
+                        // Like and Comment section
+                        HStack(spacing: 20) {
+                            // Like section
+                            HStack(spacing: 8) {
+                                // Heart button
+                                Button(action: {
+                                    toggleLike()
+                                }) {
+                                    Image(systemName: isLiked ? "heart.fill" : "heart")
+                                        .font(.system(size: 28, weight: .medium))
+                                        .foregroundColor(isLiked ? .red : .white)
+                                        .shadow(color: .black.opacity(0.5), radius: 3)
                                 }
+                                .buttonStyle(PlainButtonStyle())
 
-                                // Comment section
-                                HStack(spacing: 8) {
-                                    // Comment button
+                                // Like count button
+                                if likeCount > 0 {
                                     Button(action: {
-                                        showingComments = true
+                                        showingLikesList = true
                                     }) {
-                                        Image(systemName: "bubble.left")
-                                            .font(.system(size: 24, weight: .medium))
+                                        Text("\(likeCount)")
+                                            .font(.system(size: 18, weight: .bold))
                                             .foregroundColor(.white)
+                                            .shadow(color: .black.opacity(0.5), radius: 3)
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                }
+                            }
 
-                                    // Comment count
-                                    if commentCount > 0 {
-                                        Text("\(commentCount)")
-                                            .font(.system(size: 18, weight: .medium))
-                                            .foregroundColor(.white)
-                                    }
+                            // Comment section
+                            HStack(spacing: 8) {
+                                // Comment button
+                                Button(action: {
+                                    showingComments = true
+                                }) {
+                                    Image(systemName: "bubble.left")
+                                        .font(.system(size: 28, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.5), radius: 3)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+
+                                // Comment count
+                                if commentCount > 0 {
+                                    Text("\(commentCount)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.5), radius: 3)
                                 }
                             }
                         }
                     }
                     .padding(.horizontal, 24)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 20)
+                    .padding(.bottom, geometry.safeAreaInsets.bottom + 30)
+                }
+
+                // Heart animation overlay
+                if showHeartAnimation {
+                    HeartAnimationView()
+                        .allowsHitTesting(false)
                 }
             }
         }
