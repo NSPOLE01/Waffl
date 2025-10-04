@@ -61,27 +61,11 @@ struct VideoPlayerView: View {
                         )
                 }
 
-                // Top overlay - Close button and user profile
+                // Top overlay - User profile and close button
                 VStack {
                     HStack {
-                        // Close button
-                        Button(action: {
-                            player?.pause()
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.black.opacity(0.7))
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.3), radius: 5)
-                        }
-
-                        Spacer()
-
-                        // User profile info
-                        HStack(spacing: 12) {
+                        // User profile info (left side)
+                        HStack(spacing: 10) {
                             // Profile picture - use current user's if provided, otherwise use stored avatar
                             if let currentUserProfile = currentUserProfile, !currentUserProfile.profileImageURL.isEmpty {
                                 AsyncImage(url: URL(string: currentUserProfile.profileImageURL)) { image in
@@ -92,38 +76,54 @@ struct VideoPlayerView: View {
                                     Image(systemName: "person.circle.fill")
                                         .foregroundColor(.white)
                                 }
-                                .frame(width: 50, height: 50)
+                                .frame(width: 40, height: 40)
                                 .clipShape(Circle())
                                 .overlay(
                                     Circle()
-                                        .stroke(Color.white, lineWidth: 2)
+                                        .stroke(Color.white, lineWidth: 1.5)
                                 )
-                                .shadow(color: .black.opacity(0.5), radius: 8)
+                                .shadow(color: .black.opacity(0.5), radius: 6)
                             } else {
                                 AuthorAvatarView(avatarString: video.authorAvatar)
-                                    .frame(width: 50, height: 50)
+                                    .frame(width: 40, height: 40)
                                     .overlay(
                                         Circle()
-                                            .stroke(Color.white, lineWidth: 2)
+                                            .stroke(Color.white, lineWidth: 1.5)
                                     )
-                                    .shadow(color: .black.opacity(0.5), radius: 8)
+                                    .shadow(color: .black.opacity(0.5), radius: 6)
                             }
 
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 1) {
                                 Text(video.authorName)
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black.opacity(0.7), radius: 3)
 
                                 Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(.white.opacity(0.9))
                                     .shadow(color: .black.opacity(0.7), radius: 3)
                             }
                         }
+
+                        Spacer()
+
+                        // Close button (right side)
+                        Button(action: {
+                            player?.pause()
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(Color.black.opacity(0.7))
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.3), radius: 4)
+                        }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, geometry.safeAreaInsets.top + 20)
+                    .padding(.top, geometry.safeAreaInsets.top)
 
                     Spacer()
                 }
