@@ -81,7 +81,6 @@ struct EditProfileView: View {
                                             .foregroundColor(.purple)
                                     }
                                     
-                                    // Camera overlay
                                     VStack {
                                         Spacer()
                                         HStack {
@@ -105,7 +104,6 @@ struct EditProfileView: View {
                                 .foregroundColor(.secondary)
                         }
                         
-                        // Name Fields Section
                         VStack(spacing: 20) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("First Name")
