@@ -33,121 +33,169 @@ struct VideoCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Author info section - moved to top
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Video thumbnail section with overlay
+            ZStack {
+                // Main video thumbnail - this handles the tap to play
                 Button(action: {
-                    print("👤 Profile tapped for: \(video.authorName)")
-                    showingUserProfile = true
+                    showingVideoPlayer = true
                 }) {
-                    AuthorAvatarView(avatarString: video.authorAvatar)
+                    VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
+                        .aspectRatio(16/9, contentMode: .fill)
+                        .frame(height: 220)
+                        .clipped()
                 }
                 .buttonStyle(PlainButtonStyle())
-                .contentShape(Circle())
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(video.authorName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-
-                    Text("Posted \(video.uploadDate.formatted(.relative(presentation: .named)))")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                .onTapGesture(count: 2) {
+                    handleDoubleTapLike()
                 }
 
-                Spacer()
-            }
-
-            // Video thumbnail/placeholder
-            ZStack {
-                VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
-                    .contentShape(Rectangle())
-                    .onTapGesture(count: 2) {
-                        handleDoubleTapLike()
-                    }
-                    .onTapGesture {
-                        showingVideoPlayer = true
-                    }
+                // Gradient overlay for better text readability
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.3)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .allowsHitTesting(false)
 
                 // Heart animation overlay
                 if showHeartAnimation {
                     HeartAnimationView()
                         .allowsHitTesting(false)
                 }
-            }
 
-            // Stats section - moved below video with better spacing
-            HStack(spacing: 24) {
-                // View count with eye icon
-                HStack(spacing: 6) {
-                    Image(systemName: "eye")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.gray)
+                // Bottom overlay with author info and stats - these don't block video tap
+                VStack {
+                    Spacer()
 
-                    Text("\(viewCount)")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    // Consume tap to prevent falling through
-                }
-
-                // Like section with better spacing
-                HStack(spacing: 6) {
-                    // Heart button for liking
-                    Button(action: {
-                        toggleLike()
-                    }) {
-                        Image(systemName: isLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(isLiked ? .red : .gray)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .contentShape(Rectangle())
-
-                    // Like count button for showing who liked
-                    if likeCount > 0 {
+                    HStack(alignment: .bottom, spacing: 12) {
+                        // Author info section
                         Button(action: {
-                            showingLikesList = true
+                            print("👤 Profile tapped for: \(video.authorName)")
+                            showingUserProfile = true
                         }) {
-                            Text("\(likeCount)")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
+                            HStack(spacing: 10) {
+                                AuthorAvatarView(avatarString: video.authorAvatar)
+                                    .frame(width: 36, height: 36)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(video.authorName)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.5), radius: 2)
+
+                                    Text(video.uploadDate.formatted(.relative(presentation: .named)))
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.9))
+                                        .shadow(color: .black.opacity(0.5), radius: 2)
+                                }
+                            }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .contentShape(Rectangle())
+
+                        Spacer()
+
+                        // Quick stats overlay
+                        HStack(spacing: 16) {
+                            // Like button
+                            Button(action: {
+                                toggleLike()
+                            }) {
+                                VStack(spacing: 2) {
+                                    Image(systemName: isLiked ? "heart.fill" : "heart")
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(isLiked ? .red : .white)
+                                        .shadow(color: .black.opacity(0.5), radius: 2)
+
+                                    if likeCount > 0 {
+                                        Text("\(likeCount)")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .shadow(color: .black.opacity(0.5), radius: 2)
+                                    }
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            // Comment button
+                            Button(action: {
+                                showingComments = true
+                            }) {
+                                VStack(spacing: 2) {
+                                    Image(systemName: "bubble.left")
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.5), radius: 2)
+
+                                    if commentCount > 0 {
+                                        Text("\(commentCount)")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .shadow(color: .black.opacity(0.5), radius: 2)
+                                    }
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+                }
+            }
+
+            // Detailed stats section below video
+            HStack(spacing: 20) {
+                // View count
+                HStack(spacing: 6) {
+                    Image(systemName: "eye")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    Text("\(viewCount) views")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
 
-                // Comments section with better spacing
-                HStack(spacing: 6) {
+                // Like count (tappable to show likes list)
+                if likeCount > 0 {
                     Button(action: {
-                        showingComments = true
+                        showingLikesList = true
                     }) {
-                        Image(systemName: "bubble.left")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.gray)
+                        HStack(spacing: 6) {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.red)
+
+                            Text("\(likeCount) like\(likeCount == 1 ? "" : "s")")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .contentShape(Rectangle())
+                }
 
-                    if commentCount > 0 {
-                        Text("\(commentCount)")
+                // Comment count
+                if commentCount > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bubble.left.fill")
                             .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+
+                        Text("\(commentCount) comment\(commentCount == 1 ? "" : "s")")
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
 
                 Spacer()
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(16)
         .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+        .contentShape(RoundedRectangle(cornerRadius: 20))
         .clipped()
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
