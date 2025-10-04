@@ -22,6 +22,8 @@ struct VideoPlayerView: View {
     @Binding var likeCount: Int
     @Binding var viewCount: Int
     @State private var showingLikesList = false
+    @State private var showingComments = false
+    @State private var commentCount: Int = 0
     @State private var isPlaying = false
     @State private var hasViewBeenCounted = false
     @State private var showHeartAnimation = false
@@ -32,6 +34,7 @@ struct VideoPlayerView: View {
         self._isLiked = isLiked
         self._likeCount = likeCount
         self._viewCount = viewCount
+        self._commentCount = State(initialValue: video.commentCount)
     }
     
     var body: some View {
@@ -39,7 +42,7 @@ struct VideoPlayerView: View {
             ZStack {
                 Color.black
                     .ignoresSafeArea()
-                
+
                 VStack(spacing: 0) {
                     // Close button
                     HStack {
@@ -136,28 +139,51 @@ struct VideoPlayerView: View {
                             
                             Spacer()
                             
-                            // Like section
-                            HStack(spacing: 12) {
-                                // Heart button
-                                Button(action: {
-                                    toggleLike()
-                                }) {
-                                    Image(systemName: isLiked ? "heart.fill" : "heart")
-                                        .font(.system(size: 24, weight: .medium))
-                                        .foregroundColor(isLiked ? .red : .white)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                
-                                // Like count button
-                                if likeCount > 0 {
+                            // Like and Comment section
+                            HStack(spacing: 24) {
+                                // Like section
+                                HStack(spacing: 8) {
+                                    // Heart button
                                     Button(action: {
-                                        showingLikesList = true
+                                        toggleLike()
                                     }) {
-                                        Text("\(likeCount)")
-                                            .font(.system(size: 18, weight: .medium))
+                                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                                            .font(.system(size: 24, weight: .medium))
+                                            .foregroundColor(isLiked ? .red : .white)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+
+                                    // Like count button
+                                    if likeCount > 0 {
+                                        Button(action: {
+                                            showingLikesList = true
+                                        }) {
+                                            Text("\(likeCount)")
+                                                .font(.system(size: 18, weight: .medium))
+                                                .foregroundColor(.white)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+
+                                // Comment section
+                                HStack(spacing: 8) {
+                                    // Comment button
+                                    Button(action: {
+                                        showingComments = true
+                                    }) {
+                                        Image(systemName: "bubble.left")
+                                            .font(.system(size: 24, weight: .medium))
                                             .foregroundColor(.white)
                                     }
                                     .buttonStyle(PlainButtonStyle())
+
+                                    // Comment count
+                                    if commentCount > 0 {
+                                        Text("\(commentCount)")
+                                            .font(.system(size: 18, weight: .medium))
+                                            .foregroundColor(.white)
+                                    }
                                 }
                             }
                         }
@@ -178,6 +204,11 @@ struct VideoPlayerView: View {
         }
         .sheet(isPresented: $showingLikesList) {
             LikesListView(videoId: video.id)
+        }
+        .fullScreenCover(isPresented: $showingComments) {
+            CommentsView(videoId: video.id) {
+                refreshCommentCount()
+            }
         }
     }
     
@@ -367,6 +398,26 @@ struct VideoPlayerView: View {
                 }
             } else {
                 print("✅ Like status updated successfully for video: \(self.video.id)")
+            }
+        }
+    }
+
+    private func refreshCommentCount() {
+        let db = Firestore.firestore()
+        db.collection("videos").document(video.id).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error refreshing comment count: \(error)")
+                return
+            }
+
+            guard let data = snapshot?.data(),
+                  let newCommentCount = data["commentCount"] as? Int else {
+                print("❌ Could not get comment count from document")
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.commentCount = newCommentCount
             }
         }
     }
