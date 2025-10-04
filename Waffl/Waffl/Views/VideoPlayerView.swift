@@ -248,16 +248,28 @@ struct VideoPlayerView: View {
             print("❌ Invalid video URL: \(video.videoURL)")
             return
         }
-        
+
         let playerItem = AVPlayerItem(url: videoURL)
         player = AVPlayer(playerItem: playerItem)
-        
+
+        // Set up looping notification
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { [self] _ in
+            self.player?.seek(to: .zero)
+            if self.isPlaying == true {
+                self.player?.play()
+            }
+        }
+
         // Auto-play the video
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             player?.play()
             isPlaying = true
         }
-        
+
         print("✅ Video player setup for URL: \(videoURL)")
     }
     
