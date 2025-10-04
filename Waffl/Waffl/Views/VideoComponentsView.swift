@@ -41,8 +41,8 @@ struct VideoCard: View {
                     showingVideoPlayer = true
                 }) {
                     VideoThumbnailView(videoURL: video.videoURL, duration: video.duration)
-                        .aspectRatio(16/9, contentMode: .fill)
-                        .frame(height: 220)
+                        .frame(height: 280)
+                        .frame(maxWidth: .infinity)
                         .clipped()
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -64,12 +64,9 @@ struct VideoCard: View {
                         .allowsHitTesting(false)
                 }
 
-                // Bottom overlay with author info and stats - these don't block video tap
+                // Top left overlay - Author info
                 VStack {
-                    Spacer()
-
-                    HStack(alignment: .bottom, spacing: 12) {
-                        // Author info section
+                    HStack {
                         Button(action: {
                             print("👤 Profile tapped for: \(video.authorName)")
                             showingUserProfile = true
@@ -94,22 +91,47 @@ struct VideoCard: View {
                         .buttonStyle(PlainButtonStyle())
 
                         Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
 
-                        // Quick stats overlay
-                        HStack(spacing: 16) {
+                    Spacer()
+                }
+
+                // Bottom left overlay - Stats
+                VStack {
+                    Spacer()
+
+                    HStack {
+                        HStack(spacing: 20) {
+                            // View count
+                            HStack(spacing: 6) {
+                                Image(systemName: "eye")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black.opacity(0.5), radius: 2)
+
+                                if viewCount > 0 {
+                                    Text("\(viewCount)")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.5), radius: 2)
+                                }
+                            }
+
                             // Like button
                             Button(action: {
                                 toggleLike()
                             }) {
-                                VStack(spacing: 2) {
+                                HStack(spacing: 6) {
                                     Image(systemName: isLiked ? "heart.fill" : "heart")
-                                        .font(.system(size: 22, weight: .medium))
+                                        .font(.system(size: 20, weight: .medium))
                                         .foregroundColor(isLiked ? .red : .white)
                                         .shadow(color: .black.opacity(0.5), radius: 2)
 
                                     if likeCount > 0 {
                                         Text("\(likeCount)")
-                                            .font(.system(size: 12, weight: .semibold))
+                                            .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(.white)
                                             .shadow(color: .black.opacity(0.5), radius: 2)
                                     }
@@ -121,15 +143,15 @@ struct VideoCard: View {
                             Button(action: {
                                 showingComments = true
                             }) {
-                                VStack(spacing: 2) {
+                                HStack(spacing: 6) {
                                     Image(systemName: "bubble.left")
-                                        .font(.system(size: 22, weight: .medium))
+                                        .font(.system(size: 20, weight: .medium))
                                         .foregroundColor(.white)
                                         .shadow(color: .black.opacity(0.5), radius: 2)
 
                                     if commentCount > 0 {
                                         Text("\(commentCount)")
-                                            .font(.system(size: 12, weight: .semibold))
+                                            .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(.white)
                                             .shadow(color: .black.opacity(0.5), radius: 2)
                                     }
@@ -137,60 +159,13 @@ struct VideoCard: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
+
+                        Spacer()
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
                 }
             }
-
-            // Detailed stats section below video
-            HStack(spacing: 20) {
-                // View count
-                HStack(spacing: 6) {
-                    Image(systemName: "eye")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-
-                    Text("\(viewCount) views")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-
-                // Like count (tappable to show likes list)
-                if likeCount > 0 {
-                    Button(action: {
-                        showingLikesList = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "heart.fill")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red)
-
-                            Text("\(likeCount) like\(likeCount == 1 ? "" : "s")")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-
-                // Comment count
-                if commentCount > 0 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bubble.left.fill")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
-
-                        Text("\(commentCount) comment\(commentCount == 1 ? "" : "s")")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
         }
         .background(Color(UIColor.systemBackground))
         .cornerRadius(20)
@@ -880,22 +855,19 @@ struct VideoThumbnailView: View {
     let duration: Int
     @State private var thumbnail: UIImage?
     @State private var isLoading = true
-    
+
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.2))
-                .frame(height: 200)
-            
+            Color.gray.opacity(0.2)
+
             if let thumbnail = thumbnail {
                 Image(uiImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(height: 200)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
-                    .cornerRadius(12)
             }
-            
+
             // Overlay with play button and duration
             VStack(spacing: 8) {
                 if isLoading {
@@ -908,7 +880,7 @@ struct VideoThumbnailView: View {
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.3), radius: 2)
                 }
-                
+
                 Text("\(duration)s")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white)
@@ -918,8 +890,6 @@ struct VideoThumbnailView: View {
                     .cornerRadius(8)
             }
         }
-        .frame(height: 200) // Constrain the entire ZStack
-        .clipped() // Ensure nothing extends beyond bounds
         .onAppear {
             loadThumbnail()
         }
