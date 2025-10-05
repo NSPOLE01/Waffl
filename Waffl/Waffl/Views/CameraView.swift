@@ -14,6 +14,8 @@ struct CameraView: View {
     @StateObject private var cameraManager = CameraManager()
     @State private var showingTimeUpAlert = false
     @State private var autoStoppedVideoURL: URL?
+    @State private var sessionRetryCount = 0
+    @State private var sessionRetryTimer: Timer?
     
     var body: some View {
         ZStack {
@@ -167,9 +169,37 @@ struct CameraView: View {
         }
         .onAppear {
             cameraManager.requestPermission()
+
+            // Set up session monitoring for black screen detection
+            sessionRetryTimer?.invalidate()
+            sessionRetryTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                // If session is configured but not running and not recording, try to restart
+                if cameraManager.sessionConfigured &&
+                   !cameraManager.isRecording &&
+                   cameraManager.captureSession?.isRunning != true &&
+                   sessionRetryCount < 3 {
+                    print("🔄 Attempting to restart camera session (attempt \(sessionRetryCount + 1))")
+                    sessionRetryCount += 1
+                    cameraManager.restartSession()
+                }
+            }
         }
         .onDisappear {
+            sessionRetryTimer?.invalidate()
+            sessionRetryTimer = nil
             cameraManager.stopSession()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // Restart camera when app becomes active to fix black screen issues
+            if !cameraManager.isRecording && cameraManager.sessionConfigured {
+                cameraManager.restartSession()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            // Stop session when app goes to background
+            if !cameraManager.isRecording {
+                cameraManager.stopSession()
+            }
         }
         .onReceive(cameraManager.$recordingDuration) { duration in
             // Show alert when 1 minute is reached
@@ -257,34 +287,50 @@ class CameraManager: NSObject, ObservableObject {
         DispatchQueue.main.async {
             self.permissionDenied = false
         }
-        
+
         // Check if running on simulator
         #if targetEnvironment(simulator)
         print("📱 Running on simulator - camera functionality will be mocked")
+        DispatchQueue.main.async {
+            self.sessionConfigured = true
+        }
         return
         #endif
-        
+
         // Setup camera on background queue
         DispatchQueue.global(qos: .userInitiated).async {
+            // Stop any existing session first
+            if let existingSession = self.captureSession {
+                existingSession.stopRunning()
+            }
+
             let session = AVCaptureSession()
             session.sessionPreset = .high
-            
+
+            session.beginConfiguration()
+
             // Add video input
             guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
                 print("❌ No camera available")
+                session.commitConfiguration()
                 return
             }
-            
+
             do {
                 let videoInput = try AVCaptureDeviceInput(device: camera)
                 if session.canAddInput(videoInput) {
                     session.addInput(videoInput)
+                } else {
+                    print("❌ Cannot add video input")
+                    session.commitConfiguration()
+                    return
                 }
             } catch {
                 print("❌ Error setting up camera input: \(error)")
+                session.commitConfiguration()
                 return
             }
-            
+
             // Add audio input
             if let microphone = AVCaptureDevice.default(for: .audio) {
                 do {
@@ -296,24 +342,30 @@ class CameraManager: NSObject, ObservableObject {
                     print("❌ Error setting up audio input: \(error)")
                 }
             }
-            
+
             // Add movie output
             let output = AVCaptureMovieFileOutput()
             if session.canAddOutput(output) {
                 session.addOutput(output)
+            } else {
+                print("❌ Cannot add movie output")
             }
-            
-            // Update properties on main queue
+
+            session.commitConfiguration()
+
+            // Update properties on main queue before starting session
             DispatchQueue.main.async {
                 self.captureSession = session
                 self.currentCamera = camera
                 self.movieOutput = output
                 self.sessionConfigured = true
+
+                // Start the session after properties are set
+                DispatchQueue.global(qos: .userInitiated).async {
+                    session.startRunning()
+                    print("✅ Camera session started successfully")
+                }
             }
-            
-            // Start the session
-            session.startRunning()
-            print("✅ Camera session started successfully")
         }
     }
     
@@ -379,35 +431,51 @@ class CameraManager: NSObject, ObservableObject {
 
         guard let captureSession = captureSession,
               let currentCamera = currentCamera,
-              sessionConfigured else {
-            print("❌ Camera session not ready for flip")
+              sessionConfigured,
+              !isRecording else {
+            print("❌ Camera session not ready for flip or recording in progress")
             return
         }
 
         // Perform camera flip on background queue to avoid blocking UI
         DispatchQueue.global(qos: .userInitiated).async {
-            captureSession.beginConfiguration()
-
-            // Remove current video input
-            let currentVideoInput = captureSession.inputs.first { input in
-                (input as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true
+            // Ensure session is running
+            guard captureSession.isRunning else {
+                print("❌ Session not running - cannot flip camera")
+                return
             }
 
-            if let videoInput = currentVideoInput {
-                captureSession.removeInput(videoInput)
+            captureSession.beginConfiguration()
+
+            // Find and remove current video input
+            var removedInput: AVCaptureDeviceInput?
+            for input in captureSession.inputs {
+                if let deviceInput = input as? AVCaptureDeviceInput,
+                   deviceInput.device.hasMediaType(.video) {
+                    captureSession.removeInput(deviceInput)
+                    removedInput = deviceInput
+                    break
+                }
             }
 
             // Determine new camera position
             let newPosition: AVCaptureDevice.Position = currentCamera.position == .back ? .front : .back
 
+            // Try to find new camera
             guard let newCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition) else {
                 print("❌ No camera available for position: \(newPosition)")
+
+                // Restore original input if new camera not found
+                if let originalInput = removedInput {
+                    captureSession.addInput(originalInput)
+                }
                 captureSession.commitConfiguration()
                 return
             }
 
             do {
                 let newVideoInput = try AVCaptureDeviceInput(device: newCamera)
+
                 if captureSession.canAddInput(newVideoInput) {
                     captureSession.addInput(newVideoInput)
 
@@ -419,14 +487,19 @@ class CameraManager: NSObject, ObservableObject {
                     print("✅ Camera flipped to \(newPosition == .front ? "front" : "back")")
                 } else {
                     print("❌ Cannot add new camera input")
-                    // Re-add the original input if new one fails
-                    if let originalInput = try? AVCaptureDeviceInput(device: currentCamera),
-                       captureSession.canAddInput(originalInput) {
+
+                    // Restore original input if new one fails
+                    if let originalInput = removedInput {
                         captureSession.addInput(originalInput)
                     }
                 }
             } catch {
                 print("❌ Error creating camera input for flip: \(error)")
+
+                // Restore original input on error
+                if let originalInput = removedInput {
+                    captureSession.addInput(originalInput)
+                }
             }
 
             captureSession.commitConfiguration()
@@ -434,8 +507,30 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     func stopSession() {
-        captureSession?.stopRunning()
+        DispatchQueue.global(qos: .background).async {
+            self.captureSession?.stopRunning()
+        }
         stopTimer()
+    }
+
+    func restartSession() {
+        guard let captureSession = captureSession else {
+            setupCamera()
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            if captureSession.isRunning {
+                captureSession.stopRunning()
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                DispatchQueue.global(qos: .userInitiated).async {
+                    captureSession.startRunning()
+                    print("✅ Camera session restarted")
+                }
+            }
+        }
     }
     
     private func startTimer() {
@@ -531,8 +626,16 @@ struct CameraPreview: UIViewRepresentable {
         #if !targetEnvironment(simulator)
         // Update preview layer when camera session becomes available
         if let previewLayer = uiView.layer.sublayers?.first(where: { $0 is AVCaptureVideoPreviewLayer }) as? AVCaptureVideoPreviewLayer {
+            // Update frame
             previewLayer.frame = uiView.bounds
-        } else if cameraManager.sessionConfigured {
+
+            // Check if session has changed (camera flip)
+            if let currentSession = cameraManager.captureSession,
+               previewLayer.session != currentSession {
+                previewLayer.session = currentSession
+                print("✅ Preview layer session updated")
+            }
+        } else if cameraManager.sessionConfigured && cameraManager.captureSession != nil {
             setupPreviewLayer(for: uiView)
         }
         #endif

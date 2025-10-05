@@ -290,7 +290,6 @@ struct GroupVideosView: View {
                     }
                     Spacer()
                 } else if videos.isEmpty {
-                    Spacer()
                     VStack(spacing: 20) {
                         Image(systemName: "video.slash")
                             .font(.system(size: 50))
@@ -306,6 +305,8 @@ struct GroupVideosView: View {
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
+                    .padding(.top, 80)
+
                     Spacer()
                 } else {
                     ScrollView {
@@ -346,17 +347,17 @@ struct GroupVideosView: View {
         isLoadingVideos = true
         let db = Firestore.firestore()
 
-        // Calculate start of current week
-        let calendar = Calendar.current
-        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        // Calculate Wednesday-to-Wednesday week range
+        let (startOfWeek, endOfWeek) = calculateWednesdayWeekRange()
 
         print("🔍 Looking for videos with groupId: \(group.id)")
-        print("🔍 Start of week: \(startOfWeek)")
+        print("🔍 Wednesday week range: \(startOfWeek) to \(endOfWeek)")
 
-        // Get videos specifically shared to this group posted this week
+        // Get videos specifically shared to this group posted in the Wednesday-to-Wednesday range
         db.collection("videos")
             .whereField("groupId", isEqualTo: group.id)
             .whereField("uploadDate", isGreaterThanOrEqualTo: Timestamp(date: startOfWeek))
+            .whereField("uploadDate", isLessThan: Timestamp(date: endOfWeek))
             .order(by: "uploadDate", descending: true)
             .getDocuments { snapshot, error in
                 DispatchQueue.main.async {
@@ -384,9 +385,26 @@ struct GroupVideosView: View {
                     }
 
                     self.videos = loadedVideos
-                    print("✅ Loaded \(loadedVideos.count) group videos from this week")
+                    print("✅ Loaded \(loadedVideos.count) group videos from Wednesday week")
                 }
             }
+    }
+
+    private func calculateWednesdayWeekRange() -> (Date, Date) {
+        let calendar = Calendar.current
+        let today = Date()
+
+        // Find the most recent Wednesday (could be today if today is Wednesday)
+        let currentWeekday = calendar.component(.weekday, from: today) // 1 = Sunday, 4 = Wednesday
+        let daysFromWednesday = (currentWeekday - 4 + 7) % 7 // Days since last Wednesday
+
+        let lastWednesday = calendar.date(byAdding: .day, value: -daysFromWednesday, to: today) ?? today
+        let startOfLastWednesday = calendar.startOfDay(for: lastWednesday)
+
+        // Next Wednesday is 7 days after last Wednesday
+        let nextWednesday = calendar.date(byAdding: .day, value: 7, to: startOfLastWednesday) ?? today
+
+        return (startOfLastWednesday, nextWednesday)
     }
 }
 
