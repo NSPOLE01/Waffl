@@ -250,14 +250,6 @@ struct GroupVideosView: View {
                     .buttonStyle(PlainButtonStyle())
 
                     Spacer()
-
-                    Button(action: {
-                        showingGroupMembers = true
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.purple)
-                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
@@ -437,7 +429,7 @@ struct GroupMembersView: View {
 
                     Spacer()
 
-                    // Save/Add users button
+                    // Save button (only show when editing)
                     if isEditingName {
                         Button(action: {
                             updateGroupName()
@@ -453,14 +445,6 @@ struct GroupMembersView: View {
                             }
                         }
                         .disabled(isUpdatingName)
-                    } else {
-                        Button(action: {
-                            showingAddUsers = true
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.purple)
-                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -530,29 +514,60 @@ struct GroupMembersView: View {
                                                 .foregroundColor(.secondary)
                                         }
                                         .padding(.vertical, 20)
-                                    } else if otherMembers.isEmpty {
-                                        VStack(spacing: 16) {
-                                            Image(systemName: "person.2.slash")
-                                                .font(.system(size: 40))
-                                                .foregroundColor(.purple.opacity(0.6))
-
-                                            Text("No Other Members")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(.primary)
-
-                                            Text("You're the only member in this group")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.secondary)
-                                        }
-                                        .padding(.vertical, 20)
                                     } else {
-                                        ForEach(otherMembers) { member in
-                                            GroupMemberRow(
-                                                member: member,
-                                                onDelete: {
-                                                    removeMemberFromGroup(member)
+                                        // Add Member Button
+                                        Button(action: {
+                                            showingAddUsers = true
+                                        }) {
+                                            HStack(spacing: 16) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color.purple.opacity(0.1))
+                                                        .frame(width: 50, height: 50)
+
+                                                    Image(systemName: "plus")
+                                                        .font(.system(size: 20, weight: .medium))
+                                                        .foregroundColor(.purple)
                                                 }
-                                            )
+
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text("Add Member")
+                                                        .font(.system(size: 16, weight: .semibold))
+                                                        .foregroundColor(.purple)
+                                                }
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                            .background(Color.purple.opacity(0.05))
+                                            .cornerRadius(12)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+
+                                        if otherMembers.isEmpty {
+                                            VStack(spacing: 16) {
+                                                Image(systemName: "person.2.slash")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(.purple.opacity(0.6))
+
+                                                Text("No Other Members")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(.primary)
+
+                                                Text("You're the only member in this group")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(.vertical, 20)
+                                        } else {
+                                            ForEach(otherMembers) { member in
+                                                GroupMemberRow(
+                                                    member: member,
+                                                    onDelete: {
+                                                        removeMemberFromGroup(member)
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
