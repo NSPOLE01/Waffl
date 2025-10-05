@@ -33,6 +33,35 @@ struct EditProfileView: View {
         let currentLastName = authManager.currentUserProfile?.lastName ?? ""
         return firstName != currentFirstName || lastName != currentLastName || selectedPhotoData != nil
     }
+
+    @ViewBuilder
+    private var profileImageView: some View {
+        if let selectedPhotoData = selectedPhotoData,
+           let uiImage = UIImage(data: selectedPhotoData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 120, height: 120)
+                .clipShape(Circle())
+        } else if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
+                  !profileImageURL.isEmpty {
+            AsyncImage(url: URL(string: profileImageURL)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 120, height: 120)
+                    .clipShape(Circle())
+            } placeholder: {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.purple)
+            }
+        } else {
+            Image(systemName: "person.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.purple)
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -54,32 +83,8 @@ struct EditProfileView: View {
                                     Circle()
                                         .fill(Color.purple.opacity(0.1))
                                         .frame(width: 120, height: 120)
-                                    
-                                    if let selectedPhotoData = selectedPhotoData,
-                                       let uiImage = UIImage(data: selectedPhotoData) {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 120, height: 120)
-                                            .clipShape(Circle())
-                                    } else if let profileImageURL = authManager.currentUserProfile?.profileImageURL,
-                                              !profileImageURL.isEmpty {
-                                        AsyncImage(url: URL(string: profileImageURL)) { image in
-                                            image
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                                .frame(width: 120, height: 120)
-                                                .clipShape(Circle())
-                                        } placeholder: {
-                                            Image(systemName: "person.fill")
-                                                .font(.system(size: 60))
-                                                .foregroundColor(.purple)
-                                        }
-                                    } else {
-                                        Image(systemName: "person.fill")
-                                            .font(.system(size: 60))
-                                            .foregroundColor(.purple)
-                                    }
+
+                                    profileImageView
                                     
                                     VStack {
                                         Spacer()

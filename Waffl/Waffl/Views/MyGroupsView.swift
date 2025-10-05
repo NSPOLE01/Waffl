@@ -380,6 +380,7 @@ struct GroupMembersView: View {
     @State private var groupName: String = ""
     @State private var isEditingName = false
     @State private var isUpdatingName = false
+    @State private var showingEditOptions = false
 
     private var otherMembers: [WaffleUser] {
         guard let currentUserId = authManager.currentUser?.uid else { return members }
@@ -401,50 +402,20 @@ struct GroupMembersView: View {
 
                     Spacer()
 
-                    // Editable group name
-                    if isEditingName {
-                        TextField("Group name", text: $groupName)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .onSubmit {
-                                updateGroupName()
-                            }
-                    } else {
-                        Button(action: {
-                            isEditingName = true
-                        }) {
-                            HStack(spacing: 4) {
-                                Text(groupName.isEmpty ? group.name : groupName)
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.primary)
-
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+                    // Group name display
+                    Text(groupName.isEmpty ? group.name : groupName)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
 
                     Spacer()
 
-                    // Save button (only show when editing)
-                    if isEditingName {
-                        Button(action: {
-                            updateGroupName()
-                        }) {
-                            if isUpdatingName {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .purple))
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(.purple)
-                            }
-                        }
-                        .disabled(isUpdatingName)
+                    // Edit button
+                    Button(action: {
+                        showingEditOptions = true
+                    }) {
+                        Text("Edit")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.purple)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -611,6 +582,9 @@ struct GroupMembersView: View {
             AddUsersToGroupView(group: group) {
                 loadGroupMembers() // Refresh members when users are added
             }
+        }
+        .fullScreenCover(isPresented: $showingEditOptions) {
+            GroupEditView(group: group, groupName: $groupName)
         }
         .alert("Leave Group", isPresented: $showingLeaveConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -1437,3 +1411,154 @@ struct FriendSelectionRow: View {
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
+
+// MARK: - Group Edit View
+struct GroupEditView: View {
+    let group: WaffleGroup
+    @Binding var groupName: String
+    @EnvironmentObject var authManager: AuthManager
+    @Environment(\.presentationMode) var presentationMode
+    @State private var editedGroupName: String = ""
+    @State private var isUpdating = false
+    @State private var showingImagePicker = false
+    @State private var selectedImage: UIImage?
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Cancel")
+                            .font(.system(size: 16))
+                            .foregroundColor(.purple)
+                    }
+
+                    Spacer()
+
+                    Text("Edit Group")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Button(action: {
+                        saveChanges()
+                    }) {
+                        if isUpdating {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .purple))
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("Save")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.purple)
+                        }
+                    }
+                    .disabled(isUpdating || editedGroupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+
+                VStack(spacing: 32) {
+                    // Group Photo Section
+                    VStack(spacing: 16) {
+
+                        Button(action: {
+                            showingImagePicker = true
+                        }) {
+                            ZStack {
+                                if let selectedImage = selectedImage {
+                                    Image(uiImage: selectedImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 120, height: 120)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.purple, lineWidth: 3)
+                                        )
+                                } else {
+                                    Circle()
+                                        .fill(Color.purple.opacity(0.1))
+                                        .frame(width: 120, height: 120)
+                                        .overlay(
+                                            VStack(spacing: 8) {
+                                                Image(systemName: "camera")
+                                                    .font(.system(size: 32))
+                                                    .foregroundColor(.purple)
+
+                                                Text("Add Photo")
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(.purple)
+                                            }
+                                        )
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.purple.opacity(0.3), lineWidth: 2)
+                                        )
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    // Group Name Section
+                    VStack(spacing: 16) {
+
+                        TextField("Enter group name", text: $editedGroupName)
+                            .font(.system(size: 18))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
+                            .onSubmit {
+                                saveChanges()
+                            }
+                    }
+                }
+                .padding(.horizontal, 24)
+
+                Spacer()
+            }
+            .navigationBarHidden(true)
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            editedGroupName = groupName.isEmpty ? group.name : groupName
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(sourceType: .photoLibrary) { image in
+                selectedImage = image
+            }
+        }
+    }
+
+    private func saveChanges() {
+        let trimmedName = editedGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        isUpdating = true
+        let db = Firestore.firestore()
+
+        // For now, we'll only update the name. Photo upload would require additional setup
+        db.collection("groups").document(group.id).updateData([
+            "name": trimmedName
+        ]) { error in
+            DispatchQueue.main.async {
+                self.isUpdating = false
+
+                if let error = error {
+                    print("❌ Error updating group: \(error.localizedDescription)")
+                } else {
+                    print("✅ Group updated successfully")
+                    self.groupName = trimmedName
+                    self.presentationMode.wrappedValue.dismiss()
+                }
+            }
+        }
+    }
+}
+
