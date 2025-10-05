@@ -361,6 +361,9 @@ struct GroupMembersView: View {
     @State private var isAccordionExpanded = false
     @State private var showingAddUsers = false
     @State private var showingLeaveConfirmation = false
+    @State private var groupName: String = ""
+    @State private var isEditingName = false
+    @State private var isUpdatingName = false
 
     private var otherMembers: [WaffleUser] {
         guard let currentUserId = authManager.currentUser?.uid else { return members }
@@ -382,19 +385,58 @@ struct GroupMembersView: View {
 
                     Spacer()
 
-                    Text(group.name)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
+                    // Editable group name
+                    if isEditingName {
+                        TextField("Group name", text: $groupName)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .onSubmit {
+                                updateGroupName()
+                            }
+                    } else {
+                        Button(action: {
+                            isEditingName = true
+                        }) {
+                            HStack(spacing: 4) {
+                                Text(groupName.isEmpty ? group.name : groupName)
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.primary)
+
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
 
                     Spacer()
 
-                    // Add users button
-                    Button(action: {
-                        showingAddUsers = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.purple)
+                    // Save/Add users button
+                    if isEditingName {
+                        Button(action: {
+                            updateGroupName()
+                        }) {
+                            if isUpdatingName {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .purple))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.purple)
+                            }
+                        }
+                        .disabled(isUpdatingName)
+                    } else {
+                        Button(action: {
+                            showingAddUsers = true
+                        }) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.purple)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -520,6 +562,7 @@ struct GroupMembersView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
+            groupName = group.name
             loadGroupMembers()
         }
         .refreshable {
@@ -593,6 +636,39 @@ struct GroupMembersView: View {
                     } else {
                         print("✅ Member removed from group successfully")
                     }
+                }
+            }
+        }
+    }
+
+    private func updateGroupName() {
+        let trimmedName = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Validate name
+        guard !trimmedName.isEmpty, trimmedName != group.name else {
+            isEditingName = false
+            groupName = group.name // Reset to original if invalid
+            return
+        }
+
+        isUpdatingName = true
+        let db = Firestore.firestore()
+
+        db.collection("groups").document(group.id).updateData([
+            "name": trimmedName
+        ]) { error in
+            DispatchQueue.main.async {
+                self.isUpdatingName = false
+                self.isEditingName = false
+
+                if let error = error {
+                    print("❌ Error updating group name: \(error.localizedDescription)")
+                    // Revert to original name on error
+                    self.groupName = self.group.name
+                } else {
+                    print("✅ Group name updated successfully to: \(trimmedName)")
+                    // Keep the new name
+                    self.groupName = trimmedName
                 }
             }
         }
