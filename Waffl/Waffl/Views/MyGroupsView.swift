@@ -211,7 +211,8 @@ struct GroupVideosView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                HStack {
+                // Header with navigation and group info
+                HStack(alignment: .top) {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
                     }) {
@@ -222,9 +223,31 @@ struct GroupVideosView: View {
 
                     Spacer()
 
-                    Text(group.name)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
+                    // Group info section (centered)
+                    Button(action: {
+                        showingGroupMembers = true
+                    }) {
+                        VStack(spacing: 8) {
+                            // Group photo
+                            ZStack {
+                                Circle()
+                                    .fill(Color.purple.opacity(0.1))
+                                    .frame(width: 60, height: 60)
+
+                                Image(systemName: "person.3.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.purple)
+                            }
+
+                            // Group name
+                            Text(group.name)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
 
                     Spacer()
 
@@ -238,6 +261,7 @@ struct GroupVideosView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
+                .padding(.bottom, 16)
 
                 // Videos content
                 if isLoadingVideos {
