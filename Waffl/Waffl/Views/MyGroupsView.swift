@@ -456,9 +456,23 @@ struct GroupMembersView: View {
                                         .fill(Color.purple.opacity(0.1))
                                         .frame(width: 40, height: 40)
 
-                                    Image(systemName: "person.3.fill")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(.purple)
+                                    if let photoURL = group.photoURL, !photoURL.isEmpty {
+                                        AsyncImage(url: URL(string: photoURL)) { image in
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 40, height: 40)
+                                                .clipShape(Circle())
+                                        } placeholder: {
+                                            Image(systemName: "person.3.fill")
+                                                .font(.system(size: 18))
+                                                .foregroundColor(.purple)
+                                        }
+                                    } else {
+                                        Image(systemName: "person.3.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundColor(.purple)
+                                    }
                                 }
 
                                 // Title and count
@@ -1517,6 +1531,37 @@ struct GroupEditView: View {
                                             Circle()
                                                 .stroke(Color.purple, lineWidth: 3)
                                         )
+                                } else if let photoURL = group.photoURL, !photoURL.isEmpty {
+                                    AsyncImage(url: URL(string: photoURL)) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 120, height: 120)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.purple, lineWidth: 3)
+                                            )
+                                    } placeholder: {
+                                        Circle()
+                                            .fill(Color.purple.opacity(0.1))
+                                            .frame(width: 120, height: 120)
+                                            .overlay(
+                                                VStack(spacing: 8) {
+                                                    ProgressView()
+                                                        .progressViewStyle(CircularProgressViewStyle(tint: .purple))
+                                                        .scaleEffect(0.8)
+
+                                                    Text("Loading...")
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(.purple)
+                                                }
+                                            )
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.purple.opacity(0.3), lineWidth: 2)
+                                            )
+                                    }
                                 } else {
                                     Circle()
                                         .fill(Color.purple.opacity(0.1))
