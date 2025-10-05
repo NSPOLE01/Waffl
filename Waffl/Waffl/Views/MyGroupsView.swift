@@ -18,14 +18,16 @@ struct WaffleGroup: Identifiable, Codable {
     let createdAt: Date
     let members: [String] // Array of user IDs
     let memberCount: Int
+    let photoURL: String?
 
-    init(id: String = UUID().uuidString, name: String, createdBy: String, members: [String]) {
+    init(id: String = UUID().uuidString, name: String, createdBy: String, members: [String], photoURL: String? = nil) {
         self.id = id
         self.name = name
         self.createdBy = createdBy
         self.createdAt = Date()
         self.members = members
         self.memberCount = members.count
+        self.photoURL = photoURL
     }
 
     init(from document: DocumentSnapshot) throws {
@@ -44,16 +46,23 @@ struct WaffleGroup: Identifiable, Codable {
         self.createdAt = createdAtTimestamp.dateValue()
         self.members = members
         self.memberCount = data?["memberCount"] as? Int ?? members.count
+        self.photoURL = data?["photoURL"] as? String
     }
 
     func toDictionary() -> [String: Any] {
-        return [
+        var dict: [String: Any] = [
             "name": name,
             "createdBy": createdBy,
             "createdAt": Timestamp(date: createdAt),
             "members": members,
             "memberCount": memberCount
         ]
+
+        if let photoURL = photoURL {
+            dict["photoURL"] = photoURL
+        }
+
+        return dict
     }
 }
 
@@ -234,9 +243,23 @@ struct GroupVideosView: View {
                                     .fill(Color.purple.opacity(0.1))
                                     .frame(width: 60, height: 60)
 
-                                Image(systemName: "person.3.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.purple)
+                                if let photoURL = group.photoURL, !photoURL.isEmpty {
+                                    AsyncImage(url: URL(string: photoURL)) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 60, height: 60)
+                                            .clipShape(Circle())
+                                    } placeholder: {
+                                        Image(systemName: "person.3.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.purple)
+                                    }
+                                } else {
+                                    Image(systemName: "person.3.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.purple)
+                                }
                             }
 
                             // Group name
@@ -1069,9 +1092,23 @@ struct GroupRowView: View {
                     .fill(Color.purple.opacity(0.1))
                     .frame(width: 50, height: 50)
 
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.purple)
+                if let photoURL = group.photoURL, !photoURL.isEmpty {
+                    AsyncImage(url: URL(string: photoURL)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 50)
+                            .clipShape(Circle())
+                    } placeholder: {
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.purple)
+                    }
+                } else {
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.purple)
+                }
             }
 
             // Group Info
@@ -1541,20 +1578,69 @@ struct GroupEditView: View {
         guard !trimmedName.isEmpty else { return }
 
         isUpdating = true
-        let db = Firestore.firestore()
 
-        // For now, we'll only update the name. Photo upload would require additional setup
-        db.collection("groups").document(group.id).updateData([
-            "name": trimmedName
-        ]) { error in
+        if let selectedImage = selectedImage {
+            // Upload photo first, then update group data
+            uploadGroupPhoto(selectedImage) { photoURL in
+                self.updateGroupData(name: trimmedName, photoURL: photoURL)
+            }
+        } else {
+            // Only update name
+            updateGroupData(name: trimmedName, photoURL: nil)
+        }
+    }
+
+    private func uploadGroupPhoto(_ image: UIImage, completion: @escaping (String?) -> Void) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("❌ Failed to convert image to data")
+            completion(nil)
+            return
+        }
+
+        let storage = Storage.storage()
+        let photoRef = storage.reference().child("group_photos/\(group.id)_\(UUID().uuidString).jpg")
+
+        photoRef.putData(imageData, metadata: nil) { metadata, error in
+            if let error = error {
+                print("❌ Error uploading group photo: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+
+            photoRef.downloadURL { url, error in
+                if let error = error {
+                    print("❌ Error getting download URL: \(error.localizedDescription)")
+                    completion(nil)
+                } else if let url = url {
+                    print("✅ Group photo uploaded successfully: \(url.absoluteString)")
+                    completion(url.absoluteString)
+                } else {
+                    completion(nil)
+                }
+            }
+        }
+    }
+
+    private func updateGroupData(name: String, photoURL: String?) {
+        let db = Firestore.firestore()
+        var updateData: [String: Any] = ["name": name]
+
+        if let photoURL = photoURL {
+            updateData["photoURL"] = photoURL
+        }
+
+        db.collection("groups").document(group.id).updateData(updateData) { error in
             DispatchQueue.main.async {
                 self.isUpdating = false
 
                 if let error = error {
                     print("❌ Error updating group: \(error.localizedDescription)")
                 } else {
-                    print("✅ Group updated successfully")
-                    self.groupName = trimmedName
+                    print("✅ Group updated successfully with name: \(name)")
+                    if photoURL != nil {
+                        print("✅ Group photo URL updated")
+                    }
+                    self.groupName = name
                     self.presentationMode.wrappedValue.dismiss()
                 }
             }
