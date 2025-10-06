@@ -16,6 +16,7 @@ struct AccountView: View {
     @State private var showingEditProfile = false
     @State private var showingMyWaffls = false
     @State private var showingFriends = false
+    @State private var showingHelpSupport = false
     @State private var totalLikes = 0
     @State private var isLoadingLikes = true
     
@@ -121,7 +122,7 @@ struct AccountView: View {
                     }
                     
                     AccountMenuButton(title: "Help & Support", icon: "questionmark.circle") {
-                        // TODO: Navigate to help
+                        showingHelpSupport = true
                     }
                     
                     Button(action: {
@@ -180,6 +181,9 @@ struct AccountView: View {
             }
             .fullScreenCover(isPresented: $showingFriends) {
                 FriendsView()
+            }
+            .fullScreenCover(isPresented: $showingHelpSupport) {
+                HelpSupportView()
             }
         }
     }

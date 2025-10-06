@@ -60,6 +60,7 @@
 				Views/CustomStyles.swift,
 				Views/EditProfileView.swift,
 				Views/FriendsView.swift,
+				Views/HelpSupportView.swift,
 				Views/HomeScreenView.swift,
 				Views/MyGroupsView.swift,
 				Views/MyWafflsView.swift,
