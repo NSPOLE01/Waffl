@@ -19,6 +19,8 @@ struct SettingsView: View {
     @State private var isDeactivating = false
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
+    @State private var showingTermsOfService = false
+    @State private var showingPrivacyPolicy = false
 
     // Notification Settings
     @State private var likesNotifications = true
@@ -118,7 +120,7 @@ struct SettingsView: View {
                                 icon: "doc.text.fill",
                                 color: .gray
                             ) {
-                                // TODO: Open Terms of Service
+                                showingTermsOfService = true
                             }
 
                             SettingsActionRow(
@@ -126,7 +128,7 @@ struct SettingsView: View {
                                 icon: "hand.raised.fill",
                                 color: .gray
                             ) {
-                                // TODO: Open Privacy Policy
+                                showingPrivacyPolicy = true
                             }
                         }
                     }
@@ -184,6 +186,12 @@ struct SettingsView: View {
                 }
             }
         )
+        .fullScreenCover(isPresented: $showingTermsOfService) {
+            TermsOfServiceView()
+        }
+        .fullScreenCover(isPresented: $showingPrivacyPolicy) {
+            PrivacyPolicyView()
+        }
     }
 
     private func deactivateAccount() {
