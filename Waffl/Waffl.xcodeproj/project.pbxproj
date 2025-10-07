@@ -66,6 +66,7 @@
 				Views/MyWafflsView.swift,
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
+				Views/SettingsView.swift,
 				Views/SignInView.swift,
 				Views/SignUpView.swift,
 				Views/TermsAndPrivacyView.swift,
