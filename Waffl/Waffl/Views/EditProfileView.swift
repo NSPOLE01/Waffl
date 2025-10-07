@@ -193,10 +193,13 @@ struct EditProfileView: View {
             .navigationBarBackButtonHidden(true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(action: {
                         presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.purple)
                     }
-                    .foregroundColor(.purple)
                 }
             }
         }

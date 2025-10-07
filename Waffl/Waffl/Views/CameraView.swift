@@ -26,11 +26,14 @@ struct CameraView: View {
             VStack {
                 // Top controls
                 HStack {
-                    Button("Cancel") {
+                    Button(action: {
                         cameraManager.stopSession()
                         presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white)
                     }
-                    .foregroundColor(.white)
                     .padding()
                     .background(Color.black.opacity(0.5))
                     .cornerRadius(8)

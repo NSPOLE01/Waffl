@@ -25,11 +25,14 @@ struct CommentsView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button("Done") {
+                    Button(action: {
                         dismiss()
                         onDismiss?()
+                    }) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.purple)
                     }
-                    .foregroundColor(.purple)
                     
                     Spacer()
                     

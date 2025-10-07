@@ -102,7 +102,7 @@ struct MyWafflsView: View {
                         Button(action: {
                             onDismiss?()
                         }) {
-                            Image(systemName: "chevron.left")
+                            Image(systemName: "arrow.left")
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.purple)
                         }

@@ -126,10 +126,13 @@ struct FriendsView: View {
                     .navigationBarBackButtonHidden(true)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Back") {
+                            Button(action: {
                                 presentationMode.wrappedValue.dismiss()
+                            }) {
+                                Image(systemName: "arrow.left")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.purple)
                             }
-                            .foregroundColor(.purple)
                         }
                     }
         }

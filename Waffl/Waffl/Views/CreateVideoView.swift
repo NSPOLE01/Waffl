@@ -652,8 +652,8 @@ struct GroupSelectionSheet: View {
                         }
 
                         Button(action: onCancel) {
-                            Text("Cancel")
-                                .font(.system(size: 16, weight: .medium))
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.purple)
                         }
                     }

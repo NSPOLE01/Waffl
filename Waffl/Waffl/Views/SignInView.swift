@@ -411,12 +411,16 @@ struct CreateAccountPromptView: View {
                 }
                 
                 Button(action: onCancel) {
-                    Text("Cancel")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.clear)
+                    HStack {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Back")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)

@@ -225,7 +225,7 @@ struct GroupVideosView: View {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "arrow.left")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.purple)
                     }
@@ -436,7 +436,7 @@ struct GroupMembersView: View {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "arrow.left")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.purple)
                     }
@@ -897,7 +897,7 @@ struct AddUsersToGroupView: View {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "arrow.left")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.purple)
                     }
@@ -911,7 +911,7 @@ struct AddUsersToGroupView: View {
                     Spacer()
 
                     // Placeholder for balance
-                    Image(systemName: "chevron.left")
+                    Image(systemName: "arrow.left")
                         .font(.system(size: 18, weight: .medium))
                         .opacity(0)
                 }
@@ -1197,9 +1197,9 @@ struct CreateGroupView: View {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "arrow.left")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.purple)
                     }
 
                     Spacer()
@@ -1211,13 +1211,13 @@ struct CreateGroupView: View {
                     Spacer()
 
                     // Placeholder for balance
-                    Image(systemName: "chevron.left")
+                    Image(systemName: "arrow.left")
                         .font(.system(size: 18, weight: .medium))
                         .opacity(0)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
-            
+
             VStack(spacing: 20) {
 
                 // Group name input - moved below instructions
