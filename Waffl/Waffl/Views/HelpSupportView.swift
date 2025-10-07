@@ -14,6 +14,7 @@ struct HelpSupportView: View {
         NavigationView {
             VStack(spacing: 40) {
                 Spacer()
+                    .frame(height: 80)
 
                 VStack(spacing: 20) {
                     Image(systemName: "envelope.circle.fill")
@@ -60,10 +61,13 @@ struct HelpSupportView: View {
             .navigationBarBackButtonHidden(true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
+                    Button(action: {
                         presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.purple)
                     }
-                    .foregroundColor(.purple)
                 }
             }
         }
