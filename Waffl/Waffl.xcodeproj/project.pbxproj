@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		91B8E2BE2E95F651001AE11E /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 91B8E2BD2E95F651001AE11E /* FirebaseMessaging */; };
+		91B8E2C12E95F6DB001AE11E /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 91B8E2C02E95F6DB001AE11E /* FirebaseFunctions */; };
 		91F0EA252E2872CC0056D3AA /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA242E2872CC0056D3AA /* FirebaseAuth */; };
 		91F0EA272E2872CC0056D3AA /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA262E2872CC0056D3AA /* FirebaseCore */; };
 		91F0EA292E2872CC0056D3AA /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 91F0EA282E2872CC0056D3AA /* FirebaseDatabase */; };
@@ -50,6 +52,7 @@
 				Models/NotificationManager.swift,
 				Models/NotificationModel.swift,
 				Models/OnboardingModels.swift,
+				Models/PushNotificationManager.swift,
 				Models/User.swift,
 				Views/AccountComponents.swift,
 				Views/AccountView.swift,
@@ -143,8 +146,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91B8E2BE2E95F651001AE11E /* FirebaseMessaging in Frameworks */,
 				91F0EB872E3AF7240056D3AA /* FirebaseStorage in Frameworks */,
 				91F0EA322E28760D0056D3AA /* GoogleSignIn in Frameworks */,
+				91B8E2C12E95F6DB001AE11E /* FirebaseFunctions in Frameworks */,
 				91F0EA292E2872CC0056D3AA /* FirebaseDatabase in Frameworks */,
 				91F0EA2B2E2872CC0056D3AA /* FirebaseFirestore in Frameworks */,
 				91F0EA342E28760D0056D3AA /* GoogleSignInSwift in Frameworks */,
@@ -170,12 +175,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		91B8E2BC2E95F651001AE11E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		91F0E9CB2E25E5C60056D3AA = {
 			isa = PBXGroup;
 			children = (
 				91F0EA0B2E25F0E60056D3AA /* Waffl */,
 				91F0E9E42E25E5C80056D3AA /* WafflTests */,
 				91F0E9EE2E25E5C80056D3AA /* WafflUITests */,
+				91B8E2BC2E95F651001AE11E /* Frameworks */,
 				91F0E9D52E25E5C60056D3AA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -214,6 +227,8 @@
 				91F0EA2C2E2872CC0056D3BB /* FirebaseStorage */,
 				91F0EA312E28760D0056D3AA /* GoogleSignIn */,
 				91F0EA332E28760D0056D3AA /* GoogleSignInSwift */,
+				91B8E2BD2E95F651001AE11E /* FirebaseMessaging */,
+				91B8E2C02E95F6DB001AE11E /* FirebaseFunctions */,
 			);
 			productName = Waffl;
 			productReference = 91F0E9D42E25E5C60056D3AA /* Waffl.app */;
@@ -688,6 +703,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		91B8E2BD2E95F651001AE11E /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		91B8E2C02E95F6DB001AE11E /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
 		91F0EA242E2872CC0056D3AA /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 91F0EA232E2872CC0056D3AA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

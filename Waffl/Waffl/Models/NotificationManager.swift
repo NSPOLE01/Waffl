@@ -184,6 +184,13 @@ class NotificationManager: ObservableObject {
         )
 
         createNotification(notification)
+
+        // Send push notification
+        PushNotificationManager.sendLikePushNotification(
+            to: recipientId,
+            senderName: senderName,
+            videoId: videoId
+        )
     }
 
     static func createCommentNotification(
@@ -210,6 +217,14 @@ class NotificationManager: ObservableObject {
         )
 
         createNotification(notification)
+
+        // Send push notification
+        PushNotificationManager.sendCommentPushNotification(
+            to: recipientId,
+            senderName: senderName,
+            commentText: commentText,
+            videoId: videoId
+        )
     }
 
     static func createFollowNotification(
@@ -230,6 +245,12 @@ class NotificationManager: ObservableObject {
         )
 
         createNotification(notification)
+
+        // Send push notification
+        PushNotificationManager.sendFollowPushNotification(
+            to: recipientId,
+            senderName: senderName
+        )
     }
 
     private static func createNotification(_ notification: WaffleNotification) {

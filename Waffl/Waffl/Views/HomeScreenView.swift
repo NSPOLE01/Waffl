@@ -9,7 +9,8 @@ import SwiftUI
 
 struct HomeScreenView: View {
     @State private var selectedTab = 1 // Start with "Browse Videos" tab
-    
+    @StateObject private var pushNotificationManager = PushNotificationManager.shared
+
     var body: some View {
         TabView(selection: $selectedTab) {
             // Browse Videos Tab
@@ -47,6 +48,9 @@ struct HomeScreenView: View {
         .accentColor(.purple)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToAccountTab"))) { _ in
             selectedTab = 4
+        }
+        .onAppear {
+            pushNotificationManager.requestNotificationPermission()
         }
     }
 
