@@ -13,7 +13,7 @@ struct HomeScreenView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             // Browse Videos Tab
-            BrowseVideosView()
+            BrowseVideosView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "video.fill")
                     Text("Browse Videos")

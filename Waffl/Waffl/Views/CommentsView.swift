@@ -226,6 +226,9 @@ struct CommentsView: View {
                     self.newCommentText = ""
                     self.loadComments() // Refresh comments
                     self.updateVideoCommentCount(increment: true)
+
+                    // Create notification for comment
+                    self.createCommentNotification(commentText: trimmedText)
                 }
             }
         }
@@ -353,6 +356,37 @@ struct CommentsView: View {
             } else {
                 print("✅ Comment count updated successfully!")
             }
+        }
+    }
+
+    private func createCommentNotification(commentText: String) {
+        guard let currentUser = authManager.currentUser,
+              let userProfile = authManager.currentUserProfile else { return }
+
+        let db = Firestore.firestore()
+
+        // Fetch video information to get the author details
+        db.collection("videos").document(videoId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error fetching video for notification: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = snapshot?.data(),
+                  let videoAuthorId = data["authorId"] as? String else {
+                print("❌ Video data not found for notification")
+                return
+            }
+
+            NotificationManager.createCommentNotification(
+                videoId: self.videoId,
+                videoThumbnailURL: data["thumbnailURL"] as? String,
+                commentText: commentText,
+                recipientId: videoAuthorId,
+                senderId: currentUser.uid,
+                senderName: userProfile.displayName,
+                senderProfileImageURL: userProfile.profileImageURL
+            )
         }
     }
 }

@@ -11,6 +11,7 @@ import FirebaseFirestore
 
 struct BrowseVideosView: View {
     @EnvironmentObject var authManager: AuthManager
+    @Binding var selectedTab: Int
     @State private var videos: [WaffleVideo] = []
     @State private var showingFriends = false
     @State private var isLoadingVideos = true
@@ -76,15 +77,10 @@ struct BrowseVideosView: View {
                 }
                 
                 Spacer()
-                
-                // Week indicator
-                VStack {
-                    Text("Today is")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(getCurrentWeekString())
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.purple)
+
+                // Notification Bell
+                NotificationBellButton(selectedTab: $selectedTab) { videoId in
+                    navigateToVideo(videoId)
                 }
             }
             .padding(.horizontal, 20)
@@ -190,9 +186,15 @@ struct BrowseVideosView: View {
             }
     }
     
-    private func getCurrentWeekString() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: Date())
+    private func navigateToVideo(_ videoId: String) {
+        // Find the video in our current list
+        if let video = videos.first(where: { $0.id == videoId }) {
+            // For now, we can scroll to that video or highlight it
+            // In a more complex implementation, you might navigate to a dedicated video view
+            print("🎥 Navigating to video: \(video.id)")
+        } else {
+            // Video not in current list, could load it separately
+            print("🎥 Video \(videoId) not found in current feed")
+        }
     }
 }

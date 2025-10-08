@@ -301,6 +301,14 @@ struct FriendsView: View {
                 
                 // Update friend counts
                 self.updateFriendCounts(currentUserId: currentUserId, targetUserId: user.uid, isFollowing: true)
+
+                // Create follow notification
+                NotificationManager.createFollowNotification(
+                    recipientId: user.uid,
+                    senderId: currentUserId,
+                    senderName: self.authManager.currentUserProfile?.displayName ?? "Someone",
+                    senderProfileImageURL: self.authManager.currentUserProfile?.profileImageURL
+                )
             }
         }
         

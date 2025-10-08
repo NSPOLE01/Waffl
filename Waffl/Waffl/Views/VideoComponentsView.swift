@@ -211,7 +211,7 @@ struct VideoCard: View {
                 showHeartAnimation = false
             }
             
-            // Update Firebase
+            // Update Firebase (notification will be created in updateLikeInFirebase)
             updateLikeInFirebase()
         } else {
             // Still show animation even if already liked
@@ -340,6 +340,18 @@ struct VideoCard: View {
                 }
             } else {
                 print("✅ Like status updated successfully for video: \(self.video.id)")
+
+                // Create notification if this is a new like (not unlike)
+                if self.isLiked {
+                    NotificationManager.createLikeNotification(
+                        videoId: self.video.id,
+                        videoThumbnailURL: self.video.thumbnailURL,
+                        recipientId: self.video.authorId,
+                        senderId: currentUserId,
+                        senderName: self.authManager.currentUserProfile?.displayName ?? "Someone",
+                        senderProfileImageURL: self.authManager.currentUserProfile?.profileImageURL
+                    )
+                }
             }
         }
     }
@@ -563,6 +575,14 @@ struct LikesListView: View {
                         print("❌ Error updating followers: \(error)")
                     } else {
                         print("✅ Successfully followed user: \(user.displayName)")
+
+                        // Create follow notification
+                        NotificationManager.createFollowNotification(
+                            recipientId: user.id,
+                            senderId: currentUserId,
+                            senderName: self.authManager.currentUserProfile?.displayName ?? "Someone",
+                            senderProfileImageURL: self.authManager.currentUserProfile?.profileImageURL
+                        )
                     }
                 }
             }
