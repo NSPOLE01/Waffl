@@ -12,6 +12,7 @@ struct NotificationBellButton: View {
     @State private var showingNotifications = false
     @Binding var selectedTab: Int
     let onVideoSelected: (String) -> Void
+    let onUserSelected: (String) -> Void
 
     var body: some View {
         Button(action: {
@@ -32,7 +33,7 @@ struct NotificationBellButton: View {
             }
         }
         .fullScreenCover(isPresented: $showingNotifications) {
-            NotificationsView(selectedTab: $selectedTab, onVideoSelected: onVideoSelected)
+            NotificationsView(selectedTab: $selectedTab, onVideoSelected: onVideoSelected, onUserSelected: onUserSelected)
         }
     }
 }

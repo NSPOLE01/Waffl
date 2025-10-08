@@ -12,6 +12,7 @@ struct NotificationsView: View {
     @Environment(\.presentationMode) var presentationMode
     @Binding var selectedTab: Int
     let onVideoSelected: (String) -> Void
+    let onUserSelected: (String) -> Void
 
     var body: some View {
         NavigationView {
@@ -110,9 +111,10 @@ struct NotificationsView: View {
                 onVideoSelected(videoId)
             }
         case .follow:
-            // For follow notifications, we could navigate to the user's profile
-            // For now, just mark as read
-            break
+            // Dismiss notifications view
+            presentationMode.wrappedValue.dismiss()
+            // Navigate to user profile
+            onUserSelected(notification.senderId)
         }
     }
 }

@@ -187,13 +187,14 @@ class PushNotificationManager: NSObject, ObservableObject {
 
     static func sendFollowPushNotification(
         to userId: String,
-        senderName: String
+        senderName: String,
+        senderId: String
     ) {
         let title = "New Follower"
         let body = "\(senderName) started following you"
         let data: [String: Any] = [
             "type": "follow",
-            "senderId": userId
+            "senderId": senderId
         ]
 
         sendPushNotification(to: userId, title: title, body: body, data: data)
@@ -246,11 +247,20 @@ extension PushNotificationManager: UNUserNotificationCenterDelegate {
                     )
                 }
             case "follow":
-                // Navigate to notifications or profile
-                NotificationCenter.default.post(
-                    name: NSNotification.Name("NavigateToNotifications"),
-                    object: nil
-                )
+                if let senderId = userInfo["senderId"] as? String {
+                    // Navigate to user profile
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("NavigateToUserProfile"),
+                        object: nil,
+                        userInfo: ["userId": senderId]
+                    )
+                } else {
+                    // Fallback to notifications
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("NavigateToNotifications"),
+                        object: nil
+                    )
+                }
             default:
                 break
             }

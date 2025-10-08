@@ -49,6 +49,23 @@ struct HomeScreenView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToAccountTab"))) { _ in
             selectedTab = 4
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToVideo"))) { notification in
+            selectedTab = 1 // Switch to Browse Videos tab
+            if let videoId = notification.userInfo?["videoId"] as? String {
+                // The video navigation will be handled by BrowseVideosView
+                print("🎥 Push notification: Navigate to video \(videoId)")
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToUserProfile"))) { notification in
+            selectedTab = 1 // Switch to Browse Videos tab
+            if let userId = notification.userInfo?["userId"] as? String {
+                // The user navigation will be handled by BrowseVideosView
+                print("👤 Push notification: Navigate to user \(userId)")
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToNotifications"))) { _ in
+            selectedTab = 1 // Switch to Browse Videos tab (where notification bell is)
+        }
         .onAppear {
             pushNotificationManager.requestNotificationPermission()
         }

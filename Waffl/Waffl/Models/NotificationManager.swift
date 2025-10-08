@@ -249,7 +249,8 @@ class NotificationManager: ObservableObject {
         // Send push notification
         PushNotificationManager.sendFollowPushNotification(
             to: recipientId,
-            senderName: senderName
+            senderName: senderName,
+            senderId: senderId
         )
     }
 

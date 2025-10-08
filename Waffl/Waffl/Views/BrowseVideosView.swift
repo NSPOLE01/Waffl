@@ -15,6 +15,8 @@ struct BrowseVideosView: View {
     @State private var videos: [WaffleVideo] = []
     @State private var showingFriends = false
     @State private var isLoadingVideos = true
+    @State private var selectedUser: WaffleUser?
+    @State private var showingUserProfile = false
     
     var body: some View {
         NavigationView {
@@ -60,6 +62,22 @@ struct BrowseVideosView: View {
             .fullScreenCover(isPresented: $showingFriends) {
                 FriendsView()
             }
+            .fullScreenCover(isPresented: $showingUserProfile) {
+                if let user = selectedUser {
+                    UserProfileView(user: user)
+                        .environmentObject(authManager)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToVideo"))) { notification in
+                if let videoId = notification.userInfo?["videoId"] as? String {
+                    navigateToVideo(videoId)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToUserProfile"))) { notification in
+                if let userId = notification.userInfo?["userId"] as? String {
+                    navigateToUser(userId)
+                }
+            }
         }
     }
     
@@ -79,9 +97,11 @@ struct BrowseVideosView: View {
                 Spacer()
 
                 // Notification Bell
-                NotificationBellButton(selectedTab: $selectedTab) { videoId in
+                NotificationBellButton(selectedTab: $selectedTab, onVideoSelected: { videoId in
                     navigateToVideo(videoId)
-                }
+                }, onUserSelected: { userId in
+                    navigateToUser(userId)
+                })
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -195,6 +215,34 @@ struct BrowseVideosView: View {
         } else {
             // Video not in current list, could load it separately
             print("🎥 Video \(videoId) not found in current feed")
+        }
+    }
+
+    private func navigateToUser(_ userId: String) {
+        // Load user data and show profile
+        let db = Firestore.firestore()
+
+        db.collection("users").whereField("uid", isEqualTo: userId).getDocuments { snapshot, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Error loading user: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let document = snapshot?.documents.first else {
+                    print("⚠️ User not found: \(userId)")
+                    return
+                }
+
+                do {
+                    let user = try WaffleUser(from: document)
+                    self.selectedUser = user
+                    self.showingUserProfile = true
+                    print("👤 Navigating to user profile: \(user.displayName)")
+                } catch {
+                    print("❌ Error parsing user data: \(error)")
+                }
+            }
         }
     }
 }
