@@ -1,3 +1,7 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
 # Xcode
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
@@ -60,3 +64,17 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Firebase Functions
+Waffl/functions/node_modules/
+Waffl/functions/package-lock.json
+Waffl/functions/.eslintrc.json
+Waffl/functions/lib/
+Waffl/functions/logs/
+Waffl/functions/.runtimeconfig.json
+
+# Firebase
+.firebase/
+*-debug.log
+firebase-debug.log
+firebase-debug.*.log

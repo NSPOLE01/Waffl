@@ -121,6 +121,11 @@ struct AccountView: View {
                     AccountMenuButton(title: "Settings", icon: "gear") {
                         showingSettings = true
                     }
+
+                    // Debug button for FCM token refresh (remove in production)
+                    AccountMenuButton(title: "Refresh Push Token", icon: "arrow.clockwise") {
+                        PushNotificationManager.shared.refreshFCMToken()
+                    }
                     
                     AccountMenuButton(title: "Help & Support", icon: "questionmark.circle") {
                         showingHelpSupport = true

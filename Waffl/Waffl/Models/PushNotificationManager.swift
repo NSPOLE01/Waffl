@@ -37,21 +37,38 @@ class PushNotificationManager: NSObject, ObservableObject {
         // Setup auth state listener to handle token updates
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
             if let user = user {
-                self?.updateFCMTokenForUser(userId: user.uid)
+                print("🔐 User authenticated: \(user.uid)")
+                // Don't immediately request FCM token - wait for APNS token first
+                print("📱 Waiting for APNS token before requesting FCM token...")
+            } else {
+                print("🔐 User signed out")
             }
         }
     }
 
     func requestNotificationPermission() {
+        // Check if running on simulator
+        #if targetEnvironment(simulator)
+        print("🚨 Running on iOS Simulator - Push notifications are not supported!")
+        print("📱 To test push notifications, use a physical iOS device")
+        return
+        #endif
+
         UNUserNotificationCenter.current().requestAuthorization(
             options: [.alert, .badge, .sound]
         ) { [weak self] granted, error in
-            print("Notification permission granted: \(granted)")
+            print("📱 Notification permission granted: \(granted)")
 
             if granted {
+                print("📱 Attempting to register for remote notifications...")
                 DispatchQueue.main.async {
+                    print("📱 Calling UIApplication.shared.registerForRemoteNotifications()")
                     UIApplication.shared.registerForRemoteNotifications()
+                    print("📱 registerForRemoteNotifications() called - waiting for callback...")
                 }
+
+                // Permission granted - remote notification registration will trigger APNS token
+                print("📱 Permission granted, will request FCM token after APNS token is received")
             }
 
             if let error = error {
@@ -60,7 +77,23 @@ class PushNotificationManager: NSObject, ObservableObject {
         }
     }
 
+    // Public function to manually refresh FCM token
+    func refreshFCMToken() {
+        #if targetEnvironment(simulator)
+        print("🚨 Cannot refresh FCM token on simulator - use a physical device")
+        return
+        #endif
+
+        if let currentUser = Auth.auth().currentUser {
+            print("🔄 Manually refreshing FCM token for: \(currentUser.uid)")
+            updateFCMTokenForUser(userId: currentUser.uid)
+        } else {
+            print("❌ No authenticated user to refresh token for")
+        }
+    }
+
     private func updateFCMTokenForUser(userId: String) {
+        print("🔄 Requesting FCM token for user: \(userId)")
         Messaging.messaging().token { [weak self] token, error in
             if let error = error {
                 print("❌ Error fetching FCM registration token: \(error)")
@@ -68,11 +101,11 @@ class PushNotificationManager: NSObject, ObservableObject {
             }
 
             guard let token = token else {
-                print("❌ FCM token is nil")
+                print("❌ FCM token is nil for user: \(userId)")
                 return
             }
 
-            print("✅ FCM registration token: \(token)")
+            print("✅ FCM registration token received for \(userId): \(String(token.prefix(20)))...")
             self?.saveFCMTokenToFirestore(userId: userId, token: token)
         }
     }
@@ -84,11 +117,11 @@ class PushNotificationManager: NSObject, ObservableObject {
             "platform": "iOS"
         ]
 
-        db.collection("users").document(userId).updateData(tokenData) { error in
+        db.collection("users").document(userId).setData(tokenData, merge: true) { error in
             if let error = error {
                 print("❌ Error saving FCM token: \(error)")
             } else {
-                print("✅ FCM token saved successfully")
+                print("✅ FCM token saved successfully for user: \(userId)")
             }
         }
     }
@@ -125,7 +158,7 @@ class PushNotificationManager: NSObject, ObservableObject {
                     "sound": "default",
                     "badge": 1
                 ],
-                "data": data,
+                "dataPayload": data,
                 "priority": "high"
             ]
 
@@ -204,12 +237,15 @@ class PushNotificationManager: NSObject, ObservableObject {
 // MARK: - MessagingDelegate
 extension PushNotificationManager: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        print("Firebase registration token: \(String(describing: fcmToken))")
+        print("🔥 FCM registration token received automatically: \(String(describing: fcmToken?.prefix(20) ?? "nil"))...")
 
         // Update token for current user if logged in
         if let currentUser = Auth.auth().currentUser,
            let token = fcmToken {
+            print("💾 Saving FCM token for user: \(currentUser.uid)")
             saveFCMTokenToFirestore(userId: currentUser.uid, token: token)
+        } else {
+            print("⚠️ No current user or FCM token to save")
         }
     }
 }
