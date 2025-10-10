@@ -462,7 +462,6 @@ struct CommentRowView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    // Comment content and like button on same line
                     HStack(alignment: .top, spacing: 8) {
                         Text(comment.content)
                             .font(.system(size: 15))
