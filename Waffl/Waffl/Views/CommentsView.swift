@@ -428,7 +428,6 @@ struct CommentRowView: View {
                 .animation(.easeInOut(duration: 0.2), value: dragOffset)
             }
             
-            // Main comment content
             HStack(alignment: .top, spacing: 12) {
                 // Profile picture
                 AsyncImage(url: URL(string: comment.authorProfileImageURL)) { image in
