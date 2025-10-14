@@ -5,31 +5,31 @@ import Foundation
 struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
+            // App title at top
+            Text("Waffl")
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+                .padding(.top, 80)
+
             Spacer()
 
-            // Clean logo and title
-            VStack(spacing: 24) {
-                // Minimal logo
+            // Center logo and subtext
+            VStack(spacing: 20) {
+                // Larger logo
                 ZStack {
                     Circle()
                         .fill(Color.purple)
-                        .frame(width: 64, height: 64)
+                        .frame(width: 84, height: 84)
 
                     Image(systemName: "video.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 36))
                         .foregroundColor(.white)
                 }
 
-                VStack(spacing: 8) {
-                    Text("Waffl")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
-
-                    Text("Weekly moments with friends")
-                        .font(.system(size: 18))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+                Text("Weekly moments with friends")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
             }
 
             Spacer()
