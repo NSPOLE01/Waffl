@@ -24,7 +24,7 @@ struct BrowseVideosView: View {
                 LazyVStack(spacing: 20) {
                     // Header
                     headerView
-                    
+
                     // Videos Section
                     if isLoadingVideos {
                         VStack(spacing: 16) {
@@ -88,12 +88,12 @@ struct BrowseVideosView: View {
                     Text("Waffl Wednesday")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.primary)
-                    
+
                     Text("This week's moments from your friends")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
 
                 // Notification Bell
@@ -109,7 +109,7 @@ struct BrowseVideosView: View {
             .onTapGesture {
                 // Consume taps to prevent falling through to videos
             }
-            
+
             // Quick stats
             HStack(spacing: 20) {
                 Button(action: {
@@ -119,13 +119,13 @@ struct BrowseVideosView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .contentShape(RoundedRectangle(cornerRadius: 12))
-                
+
                 StatCard(title: "Videos", value: "\(videos.count)", icon: "video.fill")
                     .contentShape(RoundedRectangle(cornerRadius: 12))
                     .onTapGesture {
                         // Consume tap to prevent falling through
                     }
-                
+
                 StatCard(title: "Streak", value: "\(authManager.currentUserProfile?.currentStreak ?? 0)", icon: "flame.fill")
                     .contentShape(RoundedRectangle(cornerRadius: 12))
                     .onTapGesture {

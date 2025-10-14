@@ -20,7 +20,7 @@ struct HomeScreenView: View {
                     Text("Browse Videos")
                 }
                 .tag(1)
-            
+
             // My Groups Tab
             MyGroupsView()
                 .tabItem {
@@ -28,7 +28,7 @@ struct HomeScreenView: View {
                     Text("My Groups")
                 }
                 .tag(2)
-            
+
             // Create Video Tab
             CreateVideoView()
                 .tabItem {
@@ -36,7 +36,7 @@ struct HomeScreenView: View {
                     Text("Create Video")
                 }
                 .tag(3)
-            
+
             // Account Tab
             AccountView(selectedTab: $selectedTab)
                 .tabItem {

@@ -72,6 +72,7 @@
 				Views/MyWafflsView.swift,
 				Views/NotificationBellButton.swift,
 				Views/NotificationsView.swift,
+				"Views/OnboardingComponents 2.swift",
 				Views/OnboardingComponents.swift,
 				Views/OnboardingView.swift,
 				Views/SettingsView.swift,

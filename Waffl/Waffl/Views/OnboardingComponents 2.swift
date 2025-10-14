@@ -73,38 +73,40 @@ struct PageIndicatorView: View {
 struct OnboardingButtonsView: View {
     @State private var showingSignUp = false
     @State private var showingSignIn = false
-
+    
     var body: some View {
         VStack(spacing: 16) {
-            // Primary button
             Button(action: {
                 showingSignUp = true
             }) {
-                Text("Get Started")
-                    .font(.system(size: 17, weight: .semibold))
+                Text("Create Account")
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: 54)
                     .background(Color.purple)
-                    .cornerRadius(16)
+                    .cornerRadius(12)
             }
-
-            // Secondary button
+            
             Button(action: {
                 showingSignIn = true
             }) {
-                Text("I already have an account")
-                    .font(.system(size: 16, weight: .medium))
+                Text("Sign In")
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.purple)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.purple, lineWidth: 2)
+                    )
             }
-
-            // Minimal terms
-            Text("By continuing, you agree to our Terms & Privacy Policy")
-                .font(.system(size: 13))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.top, 8)
+            
+            TermsAndPrivacyView()
         }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 40)
         .fullScreenCover(isPresented: $showingSignUp) {
             AuthCoordinatorView(initialState: .signUp)
         }

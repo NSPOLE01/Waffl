@@ -3,70 +3,43 @@ import SwiftUI
 import Foundation
 
 struct OnboardingView: View {
-    @State private var currentPage = 0
-    private let features = [
-        OnboardingFeature(
-            icon: "calendar.badge.clock",
-            title: "Weekly Connection",
-            description: "Every Wednesday, share a 1-minute video of your week with friends"
-        ),
-        OnboardingFeature(
-            icon: "person.2.fill",
-            title: "Stay Connected",
-            description: "Keep up with your friends' lives through authentic weekly updates"
-        ),
-        OnboardingFeature(
-            icon: "heart.fill",
-            title: "Real Moments",
-            description: "Share genuine moments instead of just sending reels to each other"
-        )
-    ]
-    
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.purple.opacity(0.1),
-                        Color.purple.opacity(0.05),
-                        Color.clear
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    VStack(spacing: 20) {
-                        AppLogoView()
-                        
-                        Text("Waffl Wednesday")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(Color.primary)
-                    }
-                    .padding(.top, 60)
-                    
-                    Spacer()
-                    
-                    // Feature Carousel
-                    VStack(spacing: 40) {
-                        TabView(selection: $currentPage) {
-                            ForEach(0..<features.count, id: \.self) { index in
-                                FeatureCard(feature: features[index])
-                                    .tag(index)
-                            }
-                        }
-                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                        .frame(height: 200)
-                        
-                        PageIndicatorView(currentPage: currentPage, totalPages: features.count)
-                    }
-                    
-                    Spacer()
-                    
-                    OnboardingButtonsView()
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Clean logo and title
+            VStack(spacing: 24) {
+                // Minimal logo
+                ZStack {
+                    Circle()
+                        .fill(Color.purple)
+                        .frame(width: 64, height: 64)
+
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.white)
+                }
+
+                VStack(spacing: 8) {
+                    Text("Waffl")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+
+                    Text("Weekly moments with friends")
+                        .font(.system(size: 18))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
+
+            Spacer()
+
+            // Streamlined buttons
+            VStack(spacing: 12) {
+                OnboardingButtonsView()
+            }
+            .padding(.bottom, 50)
         }
+        .padding(.horizontal, 32)
     }
 }
