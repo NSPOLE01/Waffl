@@ -28,7 +28,7 @@ struct SignUpView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Back Button
+                    // Header with Back Button
                     HStack {
                         Button(action: {
                             NotificationCenter.default.post(name: .dismissAuth, object: nil)
@@ -37,12 +37,16 @@ struct SignUpView: View {
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(.purple)
                         }
+
+                        Spacer()
+
+                        Text("Create Account")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(Color.primary)
+
                         Spacer()
                     }
                     .padding(.top, 20)
-                    
-                    // Header
-                    SignUpHeaderView()
                     
                     // Form
                     SignUpFormView(
@@ -282,16 +286,6 @@ struct SignUpView: View {
     }
 }
 
-struct SignUpHeaderView: View {
-    var body: some View {
-        VStack(spacing: 6) {
-            Text("Create Account")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundColor(Color.primary)
-        }
-        .padding(.top, 10)
-    }
-}
 
 struct SignUpFormView: View {
     @Binding var firstName: String
