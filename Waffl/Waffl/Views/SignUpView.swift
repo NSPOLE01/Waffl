@@ -288,11 +288,6 @@ struct SignUpHeaderView: View {
             Text("Create Account")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundColor(Color.primary)
-            
-            Text("Join Waffle Wednesday and start sharing your weekly moments")
-                .font(.system(size: 15))
-                .foregroundColor(Color.secondary)
-                .multilineTextAlignment(.center)
         }
         .padding(.top, 10)
     }
@@ -349,22 +344,25 @@ struct SignUpFormView: View {
                 Text("Password")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(Color.primary)
-                
-                HStack {
+
+                ZStack(alignment: .trailing) {
                     if isShowingPassword {
                         TextField("Enter your password", text: $password)
+                            .textFieldStyle(CustomTextFieldStyle())
                     } else {
                         SecureField("Enter your password", text: $password)
+                            .textFieldStyle(CustomTextFieldStyle())
                     }
-                    
+
                     Button(action: {
                         isShowingPassword.toggle()
                     }) {
                         Image(systemName: isShowingPassword ? "eye.slash" : "eye")
                             .foregroundColor(Color.secondary)
+                            .font(.system(size: 16))
                     }
+                    .padding(.trailing, 12)
                 }
-                .textFieldStyle(CustomTextFieldStyle())
             }
             
             // Confirm Password Field
@@ -372,22 +370,25 @@ struct SignUpFormView: View {
                 Text("Confirm Password")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(Color.primary)
-                
-                HStack {
+
+                ZStack(alignment: .trailing) {
                     if isShowingConfirmPassword {
                         TextField("Confirm your password", text: $confirmPassword)
+                            .textFieldStyle(CustomTextFieldStyle())
                     } else {
                         SecureField("Confirm your password", text: $confirmPassword)
+                            .textFieldStyle(CustomTextFieldStyle())
                     }
-                    
+
                     Button(action: {
                         isShowingConfirmPassword.toggle()
                     }) {
                         Image(systemName: isShowingConfirmPassword ? "eye.slash" : "eye")
                             .foregroundColor(Color.secondary)
+                            .font(.system(size: 16))
                     }
+                    .padding(.trailing, 12)
                 }
-                .textFieldStyle(CustomTextFieldStyle())
             }
             
             // Password Requirements
