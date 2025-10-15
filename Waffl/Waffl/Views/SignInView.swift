@@ -11,6 +11,8 @@ import FirebaseAuth
 import FirebaseFirestore
 import GoogleSignIn
 import GoogleSignInSwift
+import AuthenticationServices
+import CryptoKit
 
 
 
@@ -22,6 +24,7 @@ struct SignInView: View {
     @State private var showingCreateAccountAlert = false
     @State private var showingSignInError = false
     @State private var signInErrorMessage = ""
+    @StateObject private var appleSignInCoordinator = AppleSignInCoordinator()
     
     var body: some View {
         NavigationView {
@@ -60,7 +63,15 @@ struct SignInView: View {
                     isLoading: isLoading,
                     action: signInWithGoogle
                 )
-                
+
+                AppleSignInButton(
+                    buttonType: .signIn,
+                    isLoading: appleSignInCoordinator.isLoading,
+                    action: {
+                        appleSignInCoordinator.signInWithApple(isSignUp: false)
+                    }
+                )
+
                 Spacer()
                 
                 SignUpLinkView()
@@ -79,6 +90,19 @@ struct SignInView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(signInErrorMessage)
+            }
+            .alert("Apple Sign In Error", isPresented: $appleSignInCoordinator.showingError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(appleSignInCoordinator.errorMessage)
+            }
+            .sheet(isPresented: $appleSignInCoordinator.showingCreateAccountAlert) {
+                CreateAccountPromptView {
+                    appleSignInCoordinator.showingCreateAccountAlert = false
+                    NotificationCenter.default.post(name: .navigateToSignUp, object: nil)
+                } onCancel: {
+                    appleSignInCoordinator.showingCreateAccountAlert = false
+                }
             }
         }
     }
@@ -189,11 +213,12 @@ struct SignInView: View {
                 if let error = error {
                     return
                 }
-                
+
                 NotificationCenter.default.post(name: .dismissAuth, object: nil)
             }
         }
     }
+
 }
     
     
