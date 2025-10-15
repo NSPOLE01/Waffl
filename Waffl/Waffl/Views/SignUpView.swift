@@ -74,20 +74,22 @@ struct SignUpView: View {
                     )
                     
                     OrDividerView()
-                    
-                    GooglePrebuiltButton(
-                        buttonType: .signUp,
-                        isLoading: isLoading,
-                        action: signUpWithGoogle
-                    )
 
-                    AppleSignInButton(
-                        buttonType: .signUp,
-                        isLoading: appleSignInCoordinator.isLoading,
-                        action: {
-                            appleSignInCoordinator.signInWithApple(isSignUp: true)
-                        }
-                    )
+                    HStack(spacing: 16) {
+                        // Google Sign Up Button
+                        GoogleCircularButton(
+                            isLoading: isLoading,
+                            action: signUpWithGoogle
+                        )
+
+                        // Apple Sign Up Button
+                        AppleCircularButton(
+                            isLoading: appleSignInCoordinator.isLoading,
+                            action: {
+                                appleSignInCoordinator.signInWithApple(isSignUp: true)
+                            }
+                        )
+                    }
 
                     Spacer(minLength: 10)
                     
@@ -553,6 +555,10 @@ struct AppleSignInButton: View {
                     .frame(height: 54)
                     .background(Color.black)
                     .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
                 }
             }
         }
@@ -564,6 +570,69 @@ struct AppleSignInButton: View {
 enum AppleButtonType {
     case signUp
     case signIn
+}
+
+struct GoogleCircularButton: View {
+    let isLoading: Bool
+    let action: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                if isLoading {
+                    Circle()
+                        .fill(Color.black.opacity(0.7))
+                        .frame(width: 60, height: 60)
+
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    Image(colorScheme == .dark ? "ios_light_rd_na" : "ios_dark_rd_na")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                }
+            }
+        }
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.8 : 1.0)
+    }
+}
+
+struct AppleCircularButton: View {
+    let isLoading: Bool
+    let action: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                if isLoading {
+                    Circle()
+                        .fill(Color.black.opacity(0.7))
+                        .frame(width: 60, height: 60)
+
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(colorScheme == .dark ? Color.white : Color.black)
+                            .frame(width: 60, height: 60)
+
+                        Image(systemName: "applelogo")
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(colorScheme == .dark ? .black : .white)
+                    }
+                }
+            }
+        }
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.8 : 1.0)
+    }
 }
 
 struct SignInLinkView: View {

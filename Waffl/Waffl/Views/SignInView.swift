@@ -57,20 +57,22 @@ struct SignInView: View {
                 )
                 
                 OrDividerView()
-                
-                GooglePrebuiltButton(
-                    buttonType: .signIn,
-                    isLoading: isLoading,
-                    action: signInWithGoogle
-                )
 
-                AppleSignInButton(
-                    buttonType: .signIn,
-                    isLoading: appleSignInCoordinator.isLoading,
-                    action: {
-                        appleSignInCoordinator.signInWithApple(isSignUp: false)
-                    }
-                )
+                HStack(spacing: 16) {
+                    // Google Sign In Button
+                    GoogleCircularButton(
+                        isLoading: isLoading,
+                        action: signInWithGoogle
+                    )
+
+                    // Apple Sign In Button
+                    AppleCircularButton(
+                        isLoading: appleSignInCoordinator.isLoading,
+                        action: {
+                            appleSignInCoordinator.signInWithApple(isSignUp: false)
+                        }
+                    )
+                }
 
                 Spacer()
                 
@@ -229,11 +231,6 @@ struct SignInHeaderView: View {
             Text("Welcome Back")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(Color.primary)
-            
-            Text("Sign in to continue sharing your weekly moments")
-                .font(.system(size: 16))
-                .foregroundColor(Color.secondary)
-                .multilineTextAlignment(.center)
         }
         .padding(.top, 20)
     }
@@ -261,22 +258,25 @@ struct SignInFormView: View {
                 Text("Password")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(Color.primary)
-                
-                HStack {
+
+                ZStack(alignment: .trailing) {
                     if isShowingPassword {
                         TextField("Enter your password", text: $password)
+                            .textFieldStyle(CustomTextFieldStyle())
                     } else {
                         SecureField("Enter your password", text: $password)
+                            .textFieldStyle(CustomTextFieldStyle())
                     }
-                    
+
                     Button(action: {
                         isShowingPassword.toggle()
                     }) {
                         Image(systemName: isShowingPassword ? "eye.slash" : "eye")
                             .foregroundColor(Color.secondary)
+                            .font(.system(size: 16))
                     }
+                    .padding(.trailing, 12)
                 }
-                .textFieldStyle(CustomTextFieldStyle())
             }
             
             HStack {
@@ -353,7 +353,8 @@ struct GooglePrebuiltButton: View {
     let buttonType: GoogleButtonType
     let isLoading: Bool
     let action: () -> Void
-    
+    @Environment(\.colorScheme) var colorScheme
+
     var body: some View {
         Button(action: action) {
             ZStack {
@@ -362,17 +363,17 @@ struct GooglePrebuiltButton: View {
                     Rectangle()
                         .fill(Color.black.opacity(0.7))
                         .cornerRadius(8)
-                    
+
                     ProgressView()
                         .scaleEffect(0.8)
                         .foregroundColor(.white)
                 } else {
-                    Image(buttonType.imageName)
+                    Image(colorScheme == .dark ? "ios_dark_sq_SU" : "ios_light_sq_SU")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 54)
                 }
             }
-            .frame(height: 54) // Match app's sign-in button height
         }
         .disabled(isLoading)
         .opacity(isLoading ? 0.8 : 1.0)
@@ -460,5 +461,3 @@ struct CreateAccountPromptView: View {
         .presentationDragIndicator(.visible)
     }
 }
-
-
