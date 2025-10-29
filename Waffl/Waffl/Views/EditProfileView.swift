@@ -329,7 +329,6 @@ struct EditProfileView: View {
         imageRef.putData(photoData, metadata: metadata) { uploadMetadata, error in
             if let error = error {
                 print("❌ Root upload failed: \(error.localizedDescription)")
-                // If root upload fails, try the original method with different path
                 self.uploadWithAlternatePath(photoData: photoData, userId: userId, completion: completion)
                 return
             }
