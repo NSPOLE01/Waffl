@@ -354,7 +354,6 @@ struct EditProfileView: View {
         let storage = Storage.storage()
         let storageRef = storage.reference()
         
-        // Try different path structures
         let alternatePaths = [
             "images/\(userId).jpg",
             "user_images/\(userId).jpg",
