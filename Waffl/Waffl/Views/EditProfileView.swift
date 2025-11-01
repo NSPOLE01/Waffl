@@ -387,7 +387,7 @@ struct EditProfileView: View {
             imageRef.putData(photoData, metadata: metadata) { uploadMetadata, error in
                 if let error = error {
                     print("❌ Path \(path) failed: \(error.localizedDescription)")
-                    tryPath(index + 1) // Try next path
+                    tryPath(index + 1)
                     return
                 }
                 
