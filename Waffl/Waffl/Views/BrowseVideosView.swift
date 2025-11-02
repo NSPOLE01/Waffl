@@ -110,7 +110,6 @@ struct BrowseVideosView: View {
                 // Consume taps to prevent falling through to videos
             }
 
-            // Quick stats
             HStack(spacing: 20) {
                 Button(action: {
                     showingFriends = true
@@ -123,7 +122,6 @@ struct BrowseVideosView: View {
                 StatCard(title: "Videos", value: "\(videos.count)", icon: "video.fill")
                     .contentShape(RoundedRectangle(cornerRadius: 12))
                     .onTapGesture {
-                        // Consume tap to prevent falling through
                     }
 
                 StatCard(title: "Streak", value: "\(authManager.currentUserProfile?.currentStreak ?? 0)", icon: "flame.fill")
