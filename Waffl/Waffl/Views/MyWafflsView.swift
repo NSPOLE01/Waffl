@@ -19,7 +19,6 @@ struct MyWafflsView: View {
     @State private var showSuccessAlert = false
     @Environment(\.presentationMode) var presentationMode
     
-    // Optional binding for dismissal when presented as sheet/fullScreenCover
     var onDismiss: (() -> Void)?
     
     init(selectedTab: Binding<Int>, onDismiss: (() -> Void)? = nil) {
