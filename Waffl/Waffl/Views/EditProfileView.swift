@@ -396,7 +396,7 @@ struct EditProfileView: View {
                 imageRef.downloadURL { url, error in
                     if let error = error {
                         print("❌ Error getting download URL for \(path): \(error.localizedDescription)")
-                        tryPath(index + 1) // Try next path
+                        tryPath(index + 1)
                     } else if let url = url {
                         print("✅ Download URL obtained for \(path): \(url.absoluteString)")
                         completion(url.absoluteString)
