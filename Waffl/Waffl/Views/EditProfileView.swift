@@ -440,7 +440,6 @@ struct EditProfileView: View {
                     toastMessage = "Changes saved successfully!"
                     showingSuccessToast = true
                     
-                    // Refresh the auth manager's user profile
                     authManager.refreshUserProfile()
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
