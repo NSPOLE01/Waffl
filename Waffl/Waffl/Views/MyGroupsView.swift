@@ -97,7 +97,6 @@ struct MyGroupsView: View {
                     Spacer()
                 } else if groups.isEmpty {
                     Spacer()
-                    // Empty state
                     VStack(spacing: 20) {
                         Image(systemName: "person.3.fill")
                             .font(.system(size: 60))
