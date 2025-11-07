@@ -16,7 +16,7 @@ struct WaffleGroup: Identifiable, Codable {
     let name: String
     let createdBy: String
     let createdAt: Date
-    let members: [String] // Array of user IDs
+    let members: [String]
     let memberCount: Int
     let photoURL: String?
 
