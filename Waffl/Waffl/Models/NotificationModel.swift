@@ -171,23 +171,39 @@ struct WaffleNotification: Identifiable, Codable {
 
     var timeAgo: String {
         let now = Date()
-        let interval = now.timeIntervalSince(createdAt)
+        let calendar = Calendar.current
 
-        if interval < 60 {
-            return "just now"
-        } else if interval < 3600 {
-            let minutes = Int(interval / 60)
-            return "\(minutes)m ago"
-        } else if interval < 86400 {
-            let hours = Int(interval / 3600)
-            return "\(hours)h ago"
-        } else if interval < 604800 {
-            let days = Int(interval / 86400)
-            return "\(days)d ago"
+        // Check if notification is from today
+        if calendar.isDateInToday(createdAt) {
+            let interval = now.timeIntervalSince(createdAt)
+
+            // If less than a minute, show "just now"
+            if interval < 60 {
+                return "just now"
+            }
+
+            // Otherwise show the time (e.g., "3:45 PM")
+            let timeFormatter = DateFormatter()
+            timeFormatter.timeStyle = .short
+            return timeFormatter.string(from: createdAt)
+        }
+
+        // Check if notification is from yesterday
+        if calendar.isDateInYesterday(createdAt) {
+            return "1 day ago"
+        }
+
+        // For older notifications, calculate days/weeks/months
+        let components = calendar.dateComponents([.day, .weekOfYear, .month], from: createdAt, to: now)
+
+        if let months = components.month, months > 0 {
+            return months == 1 ? "1 month ago" : "\(months) months ago"
+        } else if let weeks = components.weekOfYear, weeks > 0 {
+            return weeks == 1 ? "1 week ago" : "\(weeks) weeks ago"
+        } else if let days = components.day, days > 0 {
+            return days == 1 ? "1 day ago" : "\(days) days ago"
         } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
-            return formatter.string(from: createdAt)
+            return "just now"
         }
     }
 }

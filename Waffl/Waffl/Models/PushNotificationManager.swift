@@ -134,6 +134,10 @@ class PushNotificationManager: NSObject, ObservableObject {
         body: String,
         data: [String: Any] = [:]
     ) {
+        print("🔔 Attempting to send push notification to user: \(userId)")
+        print("🔔 Title: \(title)")
+        print("🔔 Body: \(body)")
+
         let db = Firestore.firestore()
 
         // Get user's FCM token
@@ -143,11 +147,30 @@ class PushNotificationManager: NSObject, ObservableObject {
                 return
             }
 
-            guard let userData = snapshot?.data(),
-                  let fcmToken = userData["fcmToken"] as? String else {
-                print("❌ No FCM token found for user: \(userId)")
+            guard let snapshot = snapshot else {
+                print("❌ No snapshot for user: \(userId)")
                 return
             }
+
+            guard snapshot.exists else {
+                print("❌ User document does not exist: \(userId)")
+                return
+            }
+
+            guard let userData = snapshot.data() else {
+                print("❌ User document has no data: \(userId)")
+                return
+            }
+
+            print("📄 User data keys: \(userData.keys.joined(separator: ", "))")
+
+            guard let fcmToken = userData["fcmToken"] as? String else {
+                print("❌ No FCM token found for user: \(userId)")
+                print("📄 Available data: \(userData)")
+                return
+            }
+
+            print("✅ Found FCM token for user \(userId): \(String(fcmToken.prefix(20)))...")
 
             // Create push notification payload
             let pushNotification: [String: Any] = [
@@ -162,22 +185,37 @@ class PushNotificationManager: NSObject, ObservableObject {
                 "priority": "high"
             ]
 
+            print("🚀 Calling cloud function with payload")
             // Send via Cloud Function (we'll create this)
             sendViaCloudFunction(payload: pushNotification)
         }
     }
 
     private static func sendViaCloudFunction(payload: [String: Any]) {
-        // This will call a Firebase Cloud Function that sends the push notification
-        // We'll create this cloud function separately
+        print("📡 Preparing to call cloud function...")
+        print("📡 Payload keys: \(payload.keys.joined(separator: ", "))")
+
         let functions = Functions.functions()
         let sendNotification = functions.httpsCallable("sendPushNotification")
 
+        print("📡 Calling sendPushNotification cloud function...")
         sendNotification.call(payload) { result, error in
-            if let error = error {
-                print("❌ Error sending push notification: \(error)")
-            } else {
+            if let error = error as NSError? {
+                print("❌ Error sending push notification")
+                print("❌ Error domain: \(error.domain)")
+                print("❌ Error code: \(error.code)")
+                print("❌ Error description: \(error.localizedDescription)")
+                print("❌ Error userInfo: \(error.userInfo)")
+
+                // Check for specific FCM errors
+                if let errorDetails = error.userInfo["details"] as? String {
+                    print("❌ Error details: \(errorDetails)")
+                }
+            } else if let result = result {
                 print("✅ Push notification sent successfully")
+                print("✅ Result data: \(result.data)")
+            } else {
+                print("⚠️ Unexpected response: no error and no result")
             }
         }
     }

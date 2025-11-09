@@ -9,18 +9,33 @@ admin.initializeApp();
  * Called from iOS app when notifications need to be sent
  */
 exports.sendPushNotification = functions.https.onCall(async (data, context) => {
+  console.log("📱 Push notification function called", {
+    hasData: !!data,
+    dataKeys: data ? Object.keys(data) : [],
+  });
+
   try {
     const {to, notification, dataPayload, priority} = data;
 
     // Validate required fields
     if (!to || !notification) {
+      console.error("❌ Missing required fields", {to: !!to, notification: !!notification});
       throw new functions.https.HttpsError("invalid-argument", "Missing required fields: to, notification");
     }
 
     // Validate notification structure
     if (!notification.title || !notification.body) {
+      console.error("❌ Invalid notification structure", {
+        title: !!notification.title,
+        body: !!notification.body,
+      });
       throw new functions.https.HttpsError("invalid-argument", "Notification must have title and body");
     }
+
+    console.log("📝 Validated notification", {
+      title: notification.title,
+      tokenPrefix: to.substring(0, 20),
+    });
 
     // Convert all data values to strings (FCM requirement)
     const stringData = {};
@@ -52,12 +67,18 @@ exports.sendPushNotification = functions.https.onCall(async (data, context) => {
       },
     };
 
+    console.log("🚀 Sending FCM message", {
+      hasToken: !!message.token,
+      hasNotification: !!message.notification,
+      hasApns: !!message.apns,
+    });
+
     // Send the message
     const response = await admin.messaging().send(message);
 
-    console.log("Successfully sent push notification", {
+    console.log("✅ Successfully sent push notification", {
       messageId: response,
-      to: to,
+      tokenPrefix: to.substring(0, 20),
       title: notification.title,
     });
 
@@ -67,9 +88,11 @@ exports.sendPushNotification = functions.https.onCall(async (data, context) => {
     };
 
   } catch (error) {
-    console.error("Error sending push notification", {
-      error: error.message,
-      code: error.code,
+    console.error("❌ Error sending push notification", {
+      errorMessage: error.message,
+      errorCode: error.code,
+      errorStack: error.stack,
+      errorType: error.constructor.name,
     });
 
     // Re-throw HttpsError for proper client handling

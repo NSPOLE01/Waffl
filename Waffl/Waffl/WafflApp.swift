@@ -16,6 +16,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     print("🚀 App launching...")
     FirebaseApp.configure()
 
+    // Reset badge count when app launches
+    UIApplication.shared.applicationIconBadgeNumber = 0
+    print("🔔 Badge count reset to 0")
+
     // Check if notifications are enabled
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       print("📱 Current notification settings: \(settings.authorizationStatus.rawValue)")
@@ -28,6 +32,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     _ = PushNotificationManager.shared
 
     return true
+  }
+
+  // Reset badge when app becomes active
+  func applicationDidBecomeActive(_ application: UIApplication) {
+    UIApplication.shared.applicationIconBadgeNumber = 0
+    print("🔔 Badge count reset on app activate")
   }
 
   // Handle successful registration for remote notifications
