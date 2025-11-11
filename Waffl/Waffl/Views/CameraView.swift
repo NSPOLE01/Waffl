@@ -574,7 +574,6 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
             print("✅ Video saved to: \(outputFileURL)")
             DispatchQueue.main.async {
                 if let completionHandler = self.completionHandler {
-                    // Manual stop - use completion handler
                     completionHandler(outputFileURL)
                 } else {
                     // Auto stop - set the URL for the UI to handle
