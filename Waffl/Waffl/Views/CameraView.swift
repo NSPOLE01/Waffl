@@ -543,10 +543,8 @@ class CameraManager: NSObject, ObservableObject {
                 
                 // Auto-stop at 60 seconds
                 if self.recordingDuration >= 60 {
-                    // Stop the timer first to prevent multiple calls
                     self.stopTimer()
 
-                    // Stop recording - this will trigger the delegate method
                     self.movieOutput?.stopRecording()
 
                     DispatchQueue.main.async {
