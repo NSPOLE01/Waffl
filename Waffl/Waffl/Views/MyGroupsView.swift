@@ -157,7 +157,7 @@ struct MyGroupsView: View {
         }
         .fullScreenCover(isPresented: $showingCreateGroup) {
             CreateGroupView(onGroupCreated: {
-                loadGroups() // Refresh groups when a new group is created
+                loadGroups()
             })
         }
         .onAppear {
