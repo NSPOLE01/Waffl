@@ -39,7 +39,7 @@ struct AuthCoordinatorView: View {
                     }
                 
             case .signUp:
-                SignUpView()
+                PhoneAuthView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing),
                         removal: .move(edge: .leading)

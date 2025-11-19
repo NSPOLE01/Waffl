@@ -177,7 +177,6 @@ struct MyGroupsView: View {
         isLoadingGroups = true
         let db = Firestore.firestore()
 
-        // Get groups where the current user is a member
         db.collection("groups")
             .whereField("members", arrayContains: currentUserId)
             .order(by: "createdAt", descending: true)
