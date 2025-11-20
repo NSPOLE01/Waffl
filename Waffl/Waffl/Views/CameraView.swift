@@ -576,7 +576,6 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
                 if let completionHandler = self.completionHandler {
                     completionHandler(outputFileURL)
                 } else {
-                    // Auto stop - set the URL for the UI to handle
                     self.autoStoppedVideoURL = outputFileURL
                 }
             }
