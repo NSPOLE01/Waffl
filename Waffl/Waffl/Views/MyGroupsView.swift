@@ -206,7 +206,6 @@ struct MyGroupsView: View {
     }
 }
 
-// MARK: - Group Videos View
 struct GroupVideosView: View {
     let group: WaffleGroup
     @EnvironmentObject var authManager: AuthManager
