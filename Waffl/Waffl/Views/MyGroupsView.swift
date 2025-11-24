@@ -228,7 +228,6 @@ struct GroupVideosView: View {
 
                     Spacer()
 
-                    // Group info section (centered)
                     Button(action: {
                         showingGroupMembers = true
                     }) {
