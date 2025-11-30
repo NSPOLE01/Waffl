@@ -232,7 +232,6 @@ struct GroupVideosView: View {
                         showingGroupMembers = true
                     }) {
                         VStack(spacing: 8) {
-                            // Group photo
                             ZStack {
                                 Circle()
                                     .fill(Color.purple.opacity(0.1))
